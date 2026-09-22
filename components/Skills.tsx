@@ -12,11 +12,11 @@ export default function Skills() {
 
         <div className="skill-groups">
           {skillGroups.map((group) => (
-            <div className="skill-group reveal" key={group.title}>
+            <div className="skill-group spotlight reveal" key={group.title}>
               <h4>{group.title}</h4>
               <ul>
-                {group.items.map((item) => (
-                  <li key={item}>{item}</li>
+                {group.items.map((item, i) => (
+                  <li key={item} style={{ "--i": i } as React.CSSProperties}>{item}</li>
                 ))}
               </ul>
             </div>

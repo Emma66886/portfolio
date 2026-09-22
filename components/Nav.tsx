@@ -46,6 +46,7 @@ export default function Nav() {
 
   return (
     <header className={`nav${scrolled ? " scrolled" : ""}`}>
+      <div className="scroll-progress" aria-hidden="true" />
       <div className="wrap nav-inner">
         <a href="#home" className="brand" onClick={() => setOpen(false)}>
           <span className="brand-name">

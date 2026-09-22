@@ -1,6 +1,6 @@
 # Emmanuel Akinroye, Portfolio
 
-Personal portfolio site for Emmanuel Akinroye, Senior Full-Stack Engineer.
+Personal portfolio site for Emmanuel Akinroye, Senior Frontend Engineer.
 Built with **Next.js 16 (App Router)**, **React 19** and **TypeScript**.
 
 ## Getting started

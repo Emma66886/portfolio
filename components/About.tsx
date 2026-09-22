@@ -24,22 +24,22 @@ export default function About() {
         <div className="reveal">
           <p className="section-eyebrow">About Me</p>
           <h2>
-            Building Systems That
+            Interfaces People
             <br />
-            Carry Real Weight
+            Work In All Day
           </h2>
           <p className="body">
-            I&apos;m a senior full-stack engineer with over seven years building production software
-            that real businesses run on. Recent work is healthcare SaaS for a UK care provider,
-            covering scheduling, multi-tenant access control and audit logging over sensitive
-            personal data, alongside payments platforms and real-time collaboration
-            infrastructure.
+            I&apos;m a senior frontend engineer with over seven years of React in production. Most of
+            my work is the difficult end of the front end: screens that update in real time,
+            scheduling and capacity views, payment flows, and dashboards where being wrong costs
+            somebody money.
           </p>
           <p className="body">
-            I work directly with founders on live codebases, own architecture end to end, and stay
-            hands-on from schema design through to CI/CD and production monitoring. I work fully
-            remote with teams anywhere in the world. Today I serve as CTO at Usefleet, where I lead
-            engineering delivery while still writing the code.
+            I work directly with founders on live codebases. I know the backend well enough to
+            design against it rather than around it, which is usually why teams bring me in. Recent
+            work includes a multiplayer collaborative editor, a UK healthcare platform and a
+            payments product I built from nothing. I work fully remote with teams anywhere. Today
+            I&apos;m CTO at Usefleet, still writing code most days.
           </p>
 
           <ul className="checks">
@@ -51,12 +51,12 @@ export default function About() {
             ))}
           </ul>
 
-          <a href={profile.cv} className="btn btn-primary" download>
+          <a href={profile.cv} className="btn btn-primary magnetic" download>
             Download CV <ArrowDownIcon />
           </a>
         </div>
 
-        <aside className="info-card reveal">
+        <aside className="info-card spotlight reveal">
           {details.map(({ Icon, label, value, href }) => (
             <div className="info-row" key={label}>
               <span className="info-ico"><Icon /></span>

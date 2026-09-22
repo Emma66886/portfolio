@@ -1,4 +1,5 @@
 import Image from "next/image";
+import CountUp from "@/components/CountUp";
 import { ArrowRightIcon, MailIcon } from "@/components/Icons";
 import { coreStack, heroStats, profile } from "@/lib/data";
 
@@ -12,7 +13,7 @@ export default function Hero() {
       </div>
 
       <div className="wrap hero-inner">
-        <div className="hero-copy">
+        <div className="hero-copy hero-enter">
           <p className="eyebrow">Hello, I&apos;m</p>
           <h1>
             {profile.name}
@@ -21,10 +22,10 @@ export default function Hero() {
           <p className="lead">{profile.tagline}</p>
 
           <div className="hero-actions">
-            <a href="#projects" className="btn btn-primary">
+            <a href="#projects" className="btn btn-primary magnetic">
               View My Work <span className="arrow"><ArrowRightIcon /></span>
             </a>
-            <a href="#contact" className="btn btn-ghost">
+            <a href="#contact" className="btn btn-ghost magnetic">
               <MailIcon /> Contact Me
             </a>
           </div>
@@ -32,15 +33,15 @@ export default function Hero() {
           <div className="hero-stats">
             {heroStats.map((stat) => (
               <div key={stat.label}>
-                <strong>{stat.value}</strong>
+                <CountUp value={stat.value} />
                 <span>{stat.label}</span>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="hero-photo">
-          <div className="photo-frame">
+        <div className="hero-photo hero-enter-photo">
+          <div className="photo-frame" data-tilt="8">
             <Image
               src={profile.photo}
               alt={`Portrait of ${profile.name}`}
@@ -57,11 +58,11 @@ export default function Hero() {
         </div>
       </div>
 
-      <div className="wrap stack-strip">
+      <div className="wrap stack-strip hero-enter-strip">
         <p>Core stack in production</p>
         <ul>
-          {coreStack.map((tech) => (
-            <li key={tech}>{tech}</li>
+          {coreStack.map((tech, i) => (
+            <li key={tech} style={{ "--i": i } as React.CSSProperties}>{tech}</li>
           ))}
         </ul>
       </div>

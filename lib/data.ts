@@ -2,7 +2,7 @@ export const profile = {
   name: "Emmanuel Akinroye",
   firstName: "Emmanuel",
   lastName: "Akinroye",
-  role: "Senior Full-Stack Engineer",
+  role: "Senior Frontend Engineer",
   email: "kinemcodes@gmail.com",
   phone: "+234 810 474 2511",
   phoneHref: "+2348104742511",
@@ -11,28 +11,28 @@ export const profile = {
   cv: "/Emmanuel-Akinroye-CV.pdf",
   photo: "/emmanuel.jpg",
   location: "Remote, based in Nigeria, working worldwide",
-  current: "CTO & Full-Stack Engineer, Usefleet",
+  current: "CTO & Engineer, Usefleet",
   education: "CS50x, Harvard (edX) · DVM, University of Ibadan",
   tagline:
-    "I design and ship complex production SaaS: multi-tenant platforms, real-time systems and payments infrastructure, built with TypeScript, React, Node.js and PostgreSQL. Fully remote, working with teams in any time zone.",
+    "I build the front end of products people use all day: React and Next.js in TypeScript, real-time collaborative screens, dashboards and payment flows. Fully remote, working with teams in any time zone.",
 } as const;
 
 export const heroStats = [
-  { value: "7+", label: "Years shipping" },
-  { value: "$300k+", label: "Payments processed" },
-  { value: "99.9%", label: "Uptime delivered" },
+  { value: "7+", label: "Years building UIs" },
+  { value: "1,000+", label: "Concurrent live sessions" },
+  { value: "70%", label: "Fewer runtime errors" },
 ];
 
 export const coreStack = [
-  "TypeScript", "React", "Next.js", "Node.js",
-  "NestJS", "PostgreSQL", "AWS", "Docker",
+  "TypeScript", "React", "Next.js", "Redux",
+  "Tailwind CSS", "Jest", "WebSockets", "Node.js",
 ];
 
 export const highlights = [
-  "7+ years full-stack engineering",
-  "Multi-tenant SaaS architecture",
-  "Founding & principal engineer roles",
-  "Fully remote, clients worldwide",
+  "7+ years shipping production React",
+  "Real-time and collaborative interfaces",
+  "Principal and founding engineer roles",
+  "Fully remote across UK, EU and US hours",
 ];
 
 export type ServiceIcon = "code" | "layers" | "bolt" | "card";
@@ -40,63 +40,63 @@ export type ServiceIcon = "code" | "layers" | "bolt" | "card";
 export const services: { icon: ServiceIcon; title: string; body: string }[] = [
   {
     icon: "code",
-    title: "Full-Stack Product Engineering",
-    body: "End-to-end delivery from schema to UI: React and Next.js frontends on Node.js, NestJS and PostgreSQL backends, shipped to production.",
+    title: "Frontend Product Engineering",
+    body: "React and Next.js in TypeScript, from the first component through to production. I work directly on live codebases with founders and small teams.",
   },
   {
     icon: "layers",
-    title: "Multi-Tenant SaaS Architecture",
-    body: "Tenant isolation, RBAC and permission systems, row-level security, workflow engines and audit logging over sensitive data.",
+    title: "Component & State Architecture",
+    body: "Typed components other people can reuse, state that stays predictable as features pile up, and Jest tests so the pieces that matter keep working.",
   },
   {
     icon: "bolt",
-    title: "Real-Time Systems",
-    body: "WebSocket infrastructure for collaborative editors, live dashboards and messaging, running 1,000+ concurrent sessions at sub-50ms latency.",
+    title: "Real-Time Interfaces",
+    body: "Collaborative editors, live dashboards and messaging over WebSockets, holding shared state in sync across 1,000+ concurrent sessions at sub-50ms latency.",
   },
   {
     icon: "card",
-    title: "Payments & Integrations",
-    body: "Stripe and Paystack flows, multi-currency wallets, settlement reconciliation, KYC/AML and reliable third-party API integration.",
+    title: "Payments & Data-Heavy Screens",
+    body: "Checkout and wallet flows, scheduling and capacity views, admin dashboards. The screens where a mistake costs someone money.",
   },
 ];
 
 export const skillGroups = [
   {
-    title: "Languages",
-    items: ["TypeScript", "JavaScript", "Python", "Java", "C#", "Rust", "SQL", "Solidity"],
+    title: "Core",
+    items: ["TypeScript", "JavaScript", "React", "Next.js", "HTML", "CSS"],
   },
   {
-    title: "Frontend",
-    items: ["React", "Next.js", "Redux", "Tailwind CSS", "WebSockets", "Responsive UI"],
+    title: "UI & Styling",
+    items: ["Tailwind CSS", "Responsive layouts", "Component libraries", "Cross-browser UI"],
   },
   {
-    title: "Backend & Serverless",
-    items: ["Node.js", "NestJS", "Express", "ASP.NET Core", "GraphQL", "Microservices", "Event-driven"],
+    title: "State & Data",
+    items: ["Redux", "Context API", "REST APIs", "GraphQL", "WebSockets"],
   },
   {
-    title: "Data",
-    items: ["PostgreSQL", "Supabase", "MongoDB", "Redis", "SQL Server", "Partitioning & RLS"],
+    title: "Real-Time & Collaboration",
+    items: ["Multiplayer state sync", "Live dashboards", "Messaging & notifications", "Sub-50ms latency"],
   },
   {
-    title: "Security & Auth",
-    items: ["RBAC", "Row-level security", "Audit logging", "Compliance", "Sensitive data"],
+    title: "Testing & Quality",
+    items: ["Jest", "Unit & integration tests", "Strict TypeScript", "Code review standards", "GitHub Actions CI/CD"],
   },
   {
-    title: "Cloud & DevOps",
-    items: ["AWS (EC2, S3, RDS, Lambda)", "Docker", "GitHub Actions", "DigitalOcean", "Monitoring"],
+    title: "Backend When It Helps",
+    items: ["Node.js", "NestJS", "PostgreSQL", "Supabase", "Docker", "AWS"],
   },
 ];
 
 export const experience = [
   {
     date: "Mar 2026 - Present · Remote",
-    title: "Chief Technology Officer & Full-Stack Engineer",
+    title: "Chief Technology Officer & Engineer",
     org: "Usefleet",
     url: "https://www.usefleet.xyz/",
     points: [
-      "Own technical direction and architecture, leading engineering delivery end to end across backend, product and integration surfaces.",
-      "Define system architecture, module boundaries and delivery roadmap; set code review, release and testing standards.",
-      "Build and direct a small engineering team while staying hands-on in day-to-day delivery.",
+      "Own technical direction and lead engineering delivery, with the product surface and how it is built as my first concern.",
+      "Set the frontend conventions the team works to: component boundaries, typing rules, Jest coverage and what has to pass before a release ships.",
+      "Build and direct a small engineering team while staying hands-on in the day-to-day work.",
     ],
   },
   {
@@ -105,64 +105,64 @@ export const experience = [
     org: "Kinem Labs (BuildArena)",
     url: "https://kinemlabs.com",
     points: [
-      "Architected a full production platform covering project and workspace state, build orchestration and authenticated API surfaces.",
-      "Built real-time multiplayer collaboration over WebSockets, synchronising editor, canvas and output state across concurrent users.",
-      "Delivered a live visualisation layer rendering program structure and state relationships in real time as users type.",
-      "Ran the full lifecycle: self-hosted Docker infrastructure (Dokploy, Traefik), GitHub Actions CI/CD and PostHog analytics.",
+      "Built real-time multiplayer collaboration over WebSockets, keeping editor, canvas and output state in sync across people working in the same workspace.",
+      "Delivered a live visualisation layer that redraws program structure and state relationships as users type.",
+      "Owned the client architecture: workspace state, authenticated data fetching and the component patterns the rest of the app is built from.",
+      "Kept the front end fast under constant updates, and shipped it through GitHub Actions CI/CD with PostHog to see how it was actually used.",
     ],
   },
   {
     date: "Jan 2026 - Jun 2026 · Contract, Remote",
-    title: "Senior Full-Stack Engineer",
+    title: "Senior Frontend Engineer",
     org: "Ridgeway, Texas, United States",
     points: [
-      "Built an AI-powered natural-language-to-action system translating user input into executed operations across the stack.",
-      "Implemented a secure payment system with confidentiality guarantees across backend and frontend.",
-      "Provisioned AWS EC2 infrastructure with end-to-end GitHub Actions CI/CD.",
-      "Delivered a solution that processed over $300,000 in production transaction volume.",
+      "Built the interface for an AI natural-language-to-action system, turning what users typed into operations they could watch run.",
+      "Built the payment screens, handling sensitive transaction flows carefully on the client and keeping confidential data out of places it should not be.",
+      "Work shipped on this product processed over $300,000 in transaction volume.",
+      "Covered the critical flows with Jest so payment paths could not regress quietly.",
     ],
   },
   {
     date: "Jul 2025 - Dec 2025 · Contract, Remote",
-    title: "Senior Full-Stack Engineer",
+    title: "Senior Frontend Engineer",
     org: "Timglobal, UK (Healthcare SaaS)",
     url: "https://timglobal.uk",
     points: [
-      "Delivered features across a live multi-tenant healthcare platform serving care coordinators, field staff and providers.",
-      "Designed staff management and scheduling covering shift allocation, availability and capacity across teams and roles.",
-      "Modelled multi-tenant data isolation and RBAC in PostgreSQL over sensitive operational data.",
-      "Built audit logging and compliance reporting meeting UK care-sector data-handling requirements.",
+      "Shipped features across a live multi-tenant healthcare platform used by care coordinators, field staff and providers.",
+      "Built staff scheduling screens covering shift allocation, availability and capacity, giving operational leads a clear view of workload.",
+      "Built real-time messaging and notifications that stayed responsive under sustained concurrent load.",
+      "Built permission-aware screens where what each role can see and do follows the access rules, over sensitive personal data under UK care-sector requirements.",
     ],
   },
   {
     date: "Jul 2024 - Dec 2024 · Contract, Remote",
-    title: "Senior Full-Stack Engineer & Tech Lead",
+    title: "Senior Frontend Engineer & Tech Lead",
     org: "Cryptrapay",
     points: [
-      "Led architecture and delivery of a production payments and settlement platform from zero as founding engineer.",
-      "Built a Node.js and NestJS backend for multi-currency wallets, merchant onboarding and real-time reconciliation.",
-      "Settlement reconciliation kept ledger state consistent across systems, reducing payment failures by 35%.",
+      "Founding engineer on a payments and settlement platform built from nothing, owning the interface end to end.",
+      "Built React and TypeScript screens for multi-currency wallets, merchant onboarding and live transaction state.",
+      "Reconciliation work kept ledger state consistent across systems and cut payment failures by 35%.",
     ],
   },
   {
     date: "Mar 2023 - Jun 2024 · Contract, Remote",
-    title: "Senior Backend Engineer",
+    title: "Senior Frontend Engineer",
     org: "Allark",
     points: [
-      "Sole engineer responsible for architecture and end-to-end delivery, shipping from zero to production.",
-      "Engineered a WebSocket layer supporting 1,000+ concurrent sessions at sub-50ms latency.",
-      "Achieved 99.9% availability through circuit breakers and fault tolerance across external integrations.",
-      "Built a type-safe React frontend for complex real-time workflows, reducing runtime errors by 70%.",
+      "Built a type-safe React and TypeScript frontend for complex real-time workflows, cutting runtime errors by 70%.",
+      "Built the WebSocket layer behind it, carrying 1,000+ concurrent sessions at sub-50ms latency.",
+      "Sole engineer on the platform, from the first screen through to production.",
+      "Held 99.9% availability with fault tolerance across every external integration the UI depended on.",
     ],
   },
   {
     date: "2019 - 2023 · Remote",
-    title: "Earlier Engineering Roles",
+    title: "Earlier Frontend Roles",
     org: "Neatio · Blockride · Bole · Remax Real Estate (Malta)",
     points: [
-      "Led full-stack delivery of a marketplace platform, cutting fraudulent transactions by 90% with multi-step verification and atomic transaction logic.",
-      "Delivered API infrastructure and documentation that reduced third-party integration time by 60%.",
-      "Built a React, Next.js and Node.js property platform serving 1,000+ monthly active users on PostgreSQL.",
+      "Led frontend delivery of a marketplace platform in a startup team, with verification flows that cut fraudulent transactions by 90%.",
+      "Built a React and Next.js property platform serving 1,000+ monthly active users.",
+      "Delivered API documentation and integration work that cut third-party integration time by 60%.",
     ],
   },
 ];
@@ -172,16 +172,16 @@ export const projects = [
     variant: "pv-1" as const,
     title: "BuildArena",
     url: "https://buildarena.dev",
-    body: "Collaborative build platform with WebSocket state sync across concurrent users and a live visualisation layer rendering program structure as you type.",
-    tech: "TypeScript / WebSockets / Docker / PostgreSQL",
+    body: "Collaborative build platform. Editor, canvas and output stay in sync across everyone in a workspace, with a visualisation layer that redraws program structure as you type.",
+    tech: "TypeScript / React / WebSockets / Docker",
     caption: "Real-time multiplayer workspace",
   },
   {
     variant: "pv-2" as const,
     title: "Healthcare SaaS Platform",
     url: "https://timglobal.uk",
-    body: "Multi-tenant care platform with scheduling, RBAC, real-time messaging and compliance-facing audit logging over sensitive personal data.",
-    tech: "Next.js / NestJS / PostgreSQL RLS / Redis",
+    body: "Multi-tenant care platform. Scheduling and capacity screens for coordinators and field staff, real-time messaging, and reporting over sensitive personal data.",
+    tech: "Next.js / TypeScript / NestJS / PostgreSQL",
     caption: "Shift allocation & capacity",
   },
   {
@@ -190,15 +190,15 @@ export const projects = [
     url: "https://hookroast.com",
     body:
       "Pre-send deliverability platform for cold email: spam scoring on draft content, recipient verification, domain reputation and blocklist monitoring, and SPF, DKIM and DMARC record checks.",
-    tech: "Email infrastructure / DNS / SMTP / Webhooks",
+    tech: "Next.js / TypeScript / DNS & SMTP / Webhooks",
     caption: "Authentication and reputation checks",
   },
   {
     variant: "pv-3" as const,
     title: "Cryptrapay",
     url:"https://cryptrapay.com",
-    body: "Payments and settlement platform built from zero, with multi-currency wallets, merchant onboarding and reconciliation that cut payment failures by 35%.",
-    tech: "Node.js / NestJS / React / Stripe & Paystack",
+    body: "Payments and settlement platform built from zero. Multi-currency wallet screens, merchant onboarding and live transaction state, with reconciliation that cut payment failures by 35%.",
+    tech: "React / TypeScript / Node.js / Stripe & Paystack",
     caption: "Ledger consistency across systems",
   },
 ];

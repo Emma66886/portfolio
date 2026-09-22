@@ -21,7 +21,7 @@ function ProjectArt({ variant }: { variant: Variant }) {
     return (
       <div className="pv-art pv-cal">
         {["40%", "70%", "55%", "88%", "62%", "34%"].map((height, i) => (
-          <div className="pv-bar" key={i} style={{ "--h": height } as React.CSSProperties} />
+          <div className="pv-bar" key={i} style={{ "--h": height, "--i": i } as React.CSSProperties} />
         ))}
       </div>
     );
@@ -34,8 +34,8 @@ function ProjectArt({ variant }: { variant: Variant }) {
 
   return (
     <div className="pv-art pv-ledger">
-      {rows.map((row) => (
-        <div className="pv-row" key={row}>
+      {rows.map((row, i) => (
+        <div className="pv-row" key={row} style={{ "--i": i } as React.CSSProperties}>
           <span>{row}</span>
           <b><CheckIcon /></b>
         </div>
@@ -53,14 +53,14 @@ export default function Projects() {
             <p className="section-eyebrow">Featured Projects</p>
             <h2>Selected Work</h2>
           </div>
-          <a href={profile.github} target="_blank" rel="noopener noreferrer" className="link-arrow">
+          <a href={profile.github} target="_blank" rel="noopener noreferrer" className="link-arrow magnetic">
             View GitHub <span className="arrow"><ArrowRightIcon /></span>
           </a>
         </div>
 
         <div className="cards-projects">
           {projects.map((project) => (
-            <article className="project reveal" key={project.title}>
+            <article className="project spotlight reveal" key={project.title} data-tilt="4">
               <div className={`project-visual ${project.variant}`}>
                 <div className="pv-chrome"><span /><span /><span /></div>
                 <ProjectArt variant={project.variant} />

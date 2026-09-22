@@ -15,7 +15,7 @@ export default function Experience() {
           {experience.map((role) => (
             <article className="tl-item reveal" key={`${role.org}-${role.date}`}>
               <div className="tl-dot" />
-              <div className="tl-body">
+              <div className="tl-body spotlight">
                 <span className="tl-date">{role.date}</span>
                 <h3>{role.title}</h3>
                 <p className="tl-org">

@@ -22,7 +22,7 @@ export default function Services() {
           {services.map((service) => {
             const Icon = icons[service.icon];
             return (
-              <article className="card reveal" key={service.title}>
+              <article className="card spotlight reveal" key={service.title}>
                 <div className="card-ico">
                   <Icon />
                 </div>

@@ -39,7 +39,7 @@ export function useReveal() {
 
         // Stagger cards that come into view together.
         const siblings = Array.from(el.parentElement?.children ?? []);
-        el.style.transitionDelay = `${Math.min(siblings.indexOf(el), 5) * 90}ms`;
+        el.style.animationDelay = `${Math.min(siblings.indexOf(el), 5) * 90}ms`;
         el.classList.add("visible");
         return false;
       });

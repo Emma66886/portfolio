@@ -21,7 +21,7 @@ const fraunces = localFont({
 });
 
 const description =
-  "Emmanuel Akinroye is a senior full-stack engineer with 7+ years shipping production SaaS with TypeScript, React, Node.js and PostgreSQL, covering multi-tenant platforms, real-time systems and payments infrastructure.";
+  "Emmanuel Akinroye is a senior frontend engineer with 7+ years of production React and Next.js in TypeScript, building real-time collaborative interfaces, scheduling and payment screens, and data-heavy dashboards.";
 
 // Server-only: metadata is rendered on the server, so this needs no NEXT_PUBLIC_ prefix.
 const siteUrl = process.env.SITE_URL ?? "http://localhost:3000";
@@ -31,8 +31,9 @@ export const metadata: Metadata = {
   title: `${profile.name} | ${profile.role}`,
   description,
   keywords: [
-    "Emmanuel Akinroye", "full-stack engineer", "TypeScript", "React",
-    "Next.js", "Node.js", "NestJS", "PostgreSQL", "SaaS", "remote engineer",
+    "Emmanuel Akinroye", "frontend engineer", "senior frontend developer",
+    "React", "Next.js", "TypeScript", "Redux", "Tailwind CSS",
+    "real-time UI", "remote engineer",
   ],
   authors: [{ name: profile.name, url: profile.linkedin }],
   openGraph: {
