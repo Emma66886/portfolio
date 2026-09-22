@@ -167,36 +167,59 @@ export const experience = [
   },
 ];
 
-export const projects = [
+export type Project = {
+  variant: "pv-1" | "pv-2" | "pv-3" | "pv-4";
+  title: string;
+  url?: string;
+  body: string;
+  tech: string;
+  caption: string;
+  /** Screenshot of the live site. Omitted where there is no live site to show. */
+  image?: string;
+};
+
+export const projects: Project[] = [
   {
-    variant: "pv-1" as const,
+    variant: "pv-1",
     title: "BuildArena",
     url: "https://buildarena.dev",
     body: "Collaborative build platform. Editor, canvas and output stay in sync across everyone in a workspace, with a visualisation layer that redraws program structure as you type.",
     tech: "TypeScript / React / WebSockets / Docker",
     caption: "Real-time multiplayer workspace",
+    image: "/projects/buildarena.webp",
   },
   {
-    variant: "pv-2" as const,
+    variant: "pv-2",
     title: "Healthcare SaaS Platform",
     url: "https://timglobal.uk",
     body: "Multi-tenant care platform. Scheduling and capacity screens for coordinators and field staff, real-time messaging, and reporting over sensitive personal data.",
     tech: "Next.js / TypeScript / NestJS / PostgreSQL",
     caption: "Shift allocation & capacity",
+    image: "/projects/timglobal.webp",
   },
   {
-    variant: "pv-4" as const,
+    variant: "pv-4",
     title: "Hookroast",
     url: "https://hookroast.com",
     body:
       "Pre-send deliverability platform for cold email: spam scoring on draft content, recipient verification, domain reputation and blocklist monitoring, and SPF, DKIM and DMARC record checks.",
     tech: "Next.js / TypeScript / DNS & SMTP / Webhooks",
     caption: "Authentication and reputation checks",
+    image: "/projects/hookroast.webp",
   },
   {
-    variant: "pv-3" as const,
+    variant: "pv-3",
+    title: "MyBizRunner",
+    // No `url` yet: mybizrunner.com currently serves a domain parking page.
+    body: "Customer conversations from WhatsApp, Telegram, Instagram and email pulled into one inbox, with automations that reply, qualify leads and follow up on their own. Threads stay per channel, with search across the lot and a record of every automated reply.",
+    tech: "WhatsApp / Telegram / Instagram / Email integrations",
+    caption: "One inbox across every channel",
+    image: "/projects/mybizrunner.webp",
+  },
+  {
+    variant: "pv-3",
     title: "Cryptrapay",
-    url:"https://cryptrapay.com",
+    url: "https://cryptrapay.com",
     body: "Payments and settlement platform built from zero. Multi-currency wallet screens, merchant onboarding and live transaction state, with reconciliation that cut payment failures by 35%.",
     tech: "React / TypeScript / Node.js / Stripe & Paystack",
     caption: "Ledger consistency across systems",

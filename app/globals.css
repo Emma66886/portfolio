@@ -214,6 +214,8 @@ p{margin:0}
 .cards-4{display:grid;grid-template-columns:repeat(4,1fr);gap:22px}
 .cards-3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
 .cards-projects{display:grid;grid-template-columns:repeat(2,1fr);gap:24px}
+.cards-projects > .reveal{display:flex}
+.cards-projects .project{width:100%}
 .card{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
   padding:30px 26px;transition:transform .28s ease,border-color .28s ease,background .28s ease,box-shadow .28s ease;
@@ -578,4 +580,67 @@ main,.footer{position:relative;z-index:1}
   .js-reveal .project .pv-row,.js-reveal .skill-group li{opacity:1}
   .pv-line::after,.h1-sub,.photo-badge,.hero-glow,.cta-orb{animation:none}
   .timeline::after{display:none}
+}
+
+/* ---------- Projects carousel ---------- */
+.head-actions{display:flex;align-items:center;gap:18px}
+.carousel-nav{display:flex;gap:8px}
+.carousel-nav button{
+  width:38px;height:38px;border-radius:10px;display:grid;place-items:center;cursor:pointer;
+  background:var(--surface);border:1px solid var(--border);color:var(--text-2);
+  transition:background .22s,color .22s,border-color .22s,transform .22s;
+}
+.carousel-nav button:hover{background:rgba(163,38,57,.28);border-color:rgba(198,59,80,.45);color:#fff;transform:translateY(-2px)}
+.carousel-nav button:active{transform:scale(.94)}
+.carousel-nav .flip{transform:rotate(180deg)}
+
+.carousel{
+  overflow:hidden;padding:4px 0 8px;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);
+  mask-image:linear-gradient(90deg,transparent,#000 4%,#000 96%,transparent);
+}
+/* The drift is a compositor-run CSS animation: -50% is exactly one copy of the
+   cards, since the track renders the set twice, so the loop is seamless. The
+   JS-controlled offset lives on a separate wrapper, which keeps drags and the
+   arrow buttons off the main thread too. */
+.carousel-shift{
+  transform:translate3d(var(--shift,0px),0,0);transition:transform .55s cubic-bezier(.2,.7,.2,1);
+  padding-left:24px;
+}
+.carousel-shift.dragging{transition:none}
+/* The 24px spacing is a margin on each card, never `gap`: with `gap` the track
+   is one gap short of two whole copies, so -50% lands 24px off and the loop
+   visibly jumps every cycle. Padding lives on the wrapper for the same reason,
+   since -50% is measured against the track's own width. */
+.carousel-track{
+  display:flex;width:max-content;cursor:grab;
+  animation:marquee var(--marquee-duration,60s) linear infinite;
+  will-change:transform;
+}
+.carousel-track .project{margin-right:24px}
+.carousel-track.paused{animation-play-state:paused}
+.carousel-shift.dragging .carousel-track{cursor:grabbing}
+@keyframes marquee{from{transform:translate3d(0,0,0)}to{transform:translate3d(-50%,0,0)}}
+.carousel-track .project{flex:0 0 380px;touch-action:pan-y}
+.carousel-track a,.carousel-track img{-webkit-user-drag:none;user-select:none}
+
+/* Live-site screenshot inside a card */
+.project-visual.has-shot{padding:12px}
+.pv-shot{
+  position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top center;
+  opacity:.92;transition:transform .6s ease,opacity .3s ease;z-index:0;
+}
+.project:hover .pv-shot{transform:scale(1.045);opacity:1}
+/* Sits above the screenshot (a ::before would otherwise paint under the img)
+   so the caption stays readable over a light page. */
+.has-shot::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(180deg,rgba(20,14,13,.5) 0%,transparent 30%,rgba(20,14,13,.55) 62%,rgba(20,14,13,.97) 100%);
+}
+.has-shot .pv-chrome,.has-shot .pv-caption{position:relative;z-index:2}
+.has-shot .pv-caption{margin-top:auto;color:var(--text);text-shadow:0 1px 8px rgba(0,0,0,.9)}
+
+@media (max-width:600px){
+  .carousel-track .project{flex-basis:290px}
+  .head-actions{width:100%;justify-content:space-between}
 }
