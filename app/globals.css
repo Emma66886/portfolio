@@ -429,11 +429,25 @@ p{margin:0}
    =========================================================== */
 
 /* ---------- Scroll progress ---------- */
-.scroll-progress{
-  position:absolute;left:0;top:0;height:2px;width:100%;
-  transform-origin:0 50%;transform:scaleX(var(--scroll,0));
-  background:linear-gradient(90deg,var(--primary),var(--primary-lt),var(--accent));
-  box-shadow:0 0 12px rgba(198,59,80,.6);pointer-events:none;
+/* Reading progress: a charged rail with tick marks and a bright head running
+   along it. `--scroll` is set on <html> by lib/useInteractions.ts. */
+.scroll-progress{position:absolute;left:0;top:0;height:3px;width:100%;pointer-events:none}
+.scroll-progress::before{
+  content:'';position:absolute;inset:0;opacity:.5;
+  background:repeating-linear-gradient(90deg,rgba(217,165,107,.22) 0 1px,transparent 1px 72px);
+}
+.scroll-progress-fill{
+  position:absolute;inset:0;transform-origin:0 50%;transform:scaleX(var(--scroll,0));
+  background:linear-gradient(90deg,var(--primary-dk),var(--primary) 45%,var(--primary-lt) 78%,var(--accent));
+  box-shadow:0 0 14px rgba(198,59,80,.65);
+}
+.scroll-progress-head{
+  /* Positioned as a percentage of the rail, not 100vw: vw includes the
+     scrollbar, which would push the head past the end of the fill. */
+  position:absolute;top:50%;left:calc(var(--scroll,0) * 100%);width:12px;height:12px;border-radius:50%;
+  transform:translate(-50%, -50%);
+  background:radial-gradient(circle,rgba(255,244,236,.95) 0%,var(--accent) 38%,rgba(198,59,80,.35) 62%,transparent 72%);
+  opacity:calc(var(--scroll,0) * 3);
 }
 
 /* ---------- 3D background (components/Scene3D.tsx) ---------- */
@@ -643,4 +657,145 @@ main,.footer{position:relative;z-index:1}
 @media (max-width:600px){
   .carousel-track .project{flex-basis:290px}
   .head-actions{width:100%;justify-content:space-between}
+}
+
+/* ---------- 3D project gallery (ring drawn by components/Scene3D.tsx) ---------- */
+/* The stage is an empty box the WebGL ring aligns itself to. It stays
+   transparent: everything visible inside it is drawn on the page's canvas. */
+.gallery-stage{
+  height:min(46vh,420px);min-height:300px;margin-bottom:8px;
+  cursor:grab;touch-action:pan-y;
+}
+.gallery-stage.dragging{cursor:grabbing}
+.gallery-readout{max-width:620px;text-align:center;margin-inline:auto;padding-top:6px}
+.gallery-count{
+  font-size:.74rem;letter-spacing:.24em;color:var(--muted);margin-bottom:12px;font-variant-numeric:tabular-nums;
+}
+.gallery-count span{color:var(--accent);font-weight:700}
+.gallery-readout h3{font-family:var(--serif);font-size:clamp(1.4rem,2.6vw,2rem);font-weight:600;margin-bottom:12px}
+.gallery-body{color:var(--text-2);font-size:.95rem;line-height:1.7;min-height:4.2em}
+.gallery-readout .tech{margin-top:12px !important}
+.gallery-readout .project-link{margin-top:18px}
+.gallery-hint{
+  margin-top:20px;font-size:.7rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);opacity:.7;
+}
+
+/* Available to assistive tech and crawlers, invisible on screen. */
+.sr-only{
+  position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;border:0;
+}
+
+@media (max-width:600px){
+  .gallery-stage{height:38vh;min-height:240px}
+  .gallery-body{min-height:0}
+}
+
+/* ---------- Career conduit (lib/timeline.ts) ---------- */
+/* `beam-on` is set by the scene once it takes the line over, so the CSS rule
+   and the WebGL conduit never draw on top of each other. */
+.timeline.beam-on::before,.timeline.beam-on::after{opacity:0}
+.timeline.beam-on .tl-dot{background:transparent;box-shadow:none;border-color:rgba(217,165,107,.55)}
+.timeline.beam-on .tl-item:hover .tl-dot{background:var(--accent);box-shadow:0 0 0 6px rgba(217,165,107,.2)}
+
+/* ---------- Scrollbar ---------- */
+/* Styled, never replaced: a custom overlay would lose click-to-jump, drag and
+   the OS conventions people rely on. */
+/* `stable` keeps the gutter reserved, so locking body scroll for the mobile
+   menu no longer shifts the whole page sideways. */
+html{scrollbar-width:thin;scrollbar-color:var(--primary) rgba(217,157,133,.06);scrollbar-gutter:stable}
+::-webkit-scrollbar{width:12px;height:12px}
+::-webkit-scrollbar-track{
+  background:
+    repeating-linear-gradient(180deg,rgba(217,165,107,.14) 0 1px,transparent 1px 56px),
+    linear-gradient(180deg,rgba(20,14,13,.95),rgba(26,18,17,.95));
+  border-left:1px solid var(--border);
+}
+::-webkit-scrollbar-thumb{
+  border-radius:99px;border:3px solid transparent;background-clip:padding-box;
+  background-image:linear-gradient(180deg,var(--primary-lt),var(--primary) 45%,var(--primary-dk));
+  box-shadow:inset 0 0 0 1px rgba(217,165,107,.35);
+}
+::-webkit-scrollbar-thumb:hover{
+  background-image:linear-gradient(180deg,var(--accent),var(--primary-lt) 55%,var(--primary));
+  box-shadow:inset 0 0 0 1px rgba(246,236,231,.5), 0 0 10px rgba(198,59,80,.75);
+}
+::-webkit-scrollbar-thumb:active{background-image:linear-gradient(180deg,var(--accent),var(--accent) 40%,var(--primary-lt))}
+::-webkit-scrollbar-corner{background:transparent}
+
+/* ---------- Skills constellation (lib/constellation.ts) ---------- */
+/* An empty box for the WebGL constellation to line up with; the readable list
+   sits below it. */
+.skills-stage{height:clamp(240px,30vh,340px);margin:-8px 0 26px;pointer-events:none}
+@media (max-width:600px){.skills-stage{height:200px;margin-bottom:18px}}
+
+/* ---------- Services globe (lib/globe.ts) ---------- */
+.globe-stage{
+  height:clamp(320px,52vh,540px);cursor:grab;
+  /* The scene raycasts against the real pointer position, so this box only
+     needs to reserve the space and mark where the globe belongs. */
+}
+.globe-stage.on-marker{cursor:pointer}
+.globe-stage.dragging{cursor:grabbing}
+
+/* The tag that rides above the pointer while a marker is hovered. */
+.globe-tip{
+  position:fixed;left:var(--x,0);top:var(--y,0);z-index:60;pointer-events:none;
+  transform:translate(-50%,calc(-100% - 16px));
+  padding:6px 13px;border-radius:99px;white-space:nowrap;
+  font-size:.78rem;font-weight:600;color:var(--bg);
+  background:linear-gradient(135deg,var(--accent),#C9924F);
+  box-shadow:0 8px 20px -8px rgba(0,0,0,.8);
+  opacity:0;transition:opacity .16s ease;
+}
+.globe-tip.show{opacity:1}
+
+/* The card, pinned to its marker by the scene. */
+.globe-card{
+  position:fixed;left:var(--x,50%);top:var(--y,50%);z-index:55;
+  width:min(300px,78vw);transform:translate(-50%,calc(-100% - 22px));
+  padding:18px 20px 20px;border-radius:var(--radius);
+  background:linear-gradient(160deg,rgba(43,29,26,.97),rgba(26,18,17,.97));
+  border:1px solid var(--border-str);box-shadow:var(--shadow);
+  opacity:0;visibility:hidden;transition:opacity .2s ease,visibility .2s;
+}
+.globe-card.show{opacity:1;visibility:visible}
+/* Flipped under the marker when there is no room above it. */
+.globe-card.below{transform:translate(-50%,22px)}
+.globe-card.below::after{bottom:auto;top:-7px;border:0;border-left:1px solid var(--border-str);border-top:1px solid var(--border-str);background:rgba(43,29,26,.97)}
+/* Marker has turned to the far side of the globe. */
+.globe-card.behind{opacity:0;visibility:hidden}
+.globe-card::after{
+  content:'';position:absolute;left:50%;bottom:-7px;width:12px;height:12px;
+  transform:translateX(-50%) rotate(45deg);
+  background:rgba(26,18,17,.97);border-right:1px solid var(--border-str);border-bottom:1px solid var(--border-str);
+}
+.globe-card-index{font-size:.68rem;letter-spacing:.2em;color:var(--muted);font-variant-numeric:tabular-nums}
+.globe-card-index span{color:var(--accent);font-weight:700}
+.globe-card h3{font-size:1.02rem;margin:8px 0 8px}
+.globe-card-body{font-size:.87rem;color:var(--text-2);line-height:1.65}
+.globe-card-close{
+  position:absolute;top:8px;right:8px;width:26px;height:26px;border-radius:50%;
+  display:grid;place-items:center;cursor:pointer;font-size:1.1rem;line-height:1;
+  background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--text-2);
+  transition:background .2s,color .2s;
+}
+.globe-card-close:hover{background:rgba(198,59,80,.35);color:#fff}
+
+.globe-hint{
+  text-align:center;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--muted);opacity:.75;margin-top:10px;
+}
+.globe-stage:focus-visible{outline:2px solid var(--accent);outline-offset:-8px;border-radius:var(--radius-lg)}
+
+/* Fallback when the globe cannot be drawn: the same capabilities as plain cards. */
+.capability-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px}
+.capability-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px 22px;
+}
+.capability-card h3{font-size:1rem;margin-bottom:8px}
+.capability-card p{font-size:.88rem;color:var(--muted);line-height:1.65}
+
+@media (max-width:600px){
+  .globe-stage{height:300px}
 }

@@ -179,8 +179,8 @@ story.append(Paragraph(
     "2020, Remote). React and Next.js property platform serving 1,000+ monthly active users "
     "against 15+ REST endpoints.", body))
 
-# ---- Selected work ----
-heading("Selected Work")
+# ---- Selected Projects ----
+heading("Selected Projects")
 for title, url, desc in [
     ("BuildArena", "buildarena.dev",
      "Collaborative build platform. Editor, canvas and output stay in sync across everyone in a "

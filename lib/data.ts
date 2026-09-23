@@ -35,29 +35,45 @@ export const highlights = [
   "Fully remote across UK, EU and US hours",
 ];
 
-export type ServiceIcon = "code" | "layers" | "bolt" | "card";
+export type Capability = { title: string; body: string };
 
-export const services: { icon: ServiceIcon; title: string; body: string }[] = [
-  {
-    icon: "code",
-    title: "Frontend Product Engineering",
-    body: "React and Next.js in TypeScript, from the first component through to production. I work directly on live codebases with founders and small teams.",
-  },
-  {
-    icon: "layers",
-    title: "Component & State Architecture",
-    body: "Typed components other people can reuse, state that stays predictable as features pile up, and Jest tests so the pieces that matter keep working.",
-  },
-  {
-    icon: "bolt",
-    title: "Real-Time Interfaces",
-    body: "Collaborative editors, live dashboards and messaging over WebSockets, holding shared state in sync across 1,000+ concurrent sessions at sub-50ms latency.",
-  },
-  {
-    icon: "card",
-    title: "Payments & Data-Heavy Screens",
-    body: "Checkout and wallet flows, scheduling and capacity views, admin dashboards. The screens where a mistake costs someone money.",
-  },
+/**
+ * What Emmanuel can do, pinned around the globe in the Services section. Each
+ * one is drawn from the stack and the work in `experience` below; keep them
+ * that way rather than adding aspirations.
+ */
+export const capabilities: Capability[] = [
+  { title: "React architecture", body: "Component boundaries, data flow and state that still make sense once the product has grown." },
+  { title: "Next.js App Router", body: "Routing, rendering and deploys, with server and client components split where it actually helps." },
+  { title: "TypeScript end to end", body: "Strict types across components, API responses and state, so breakage shows up before release." },
+  { title: "Component libraries", body: "Typed building blocks the rest of the team can pick up without asking how they work." },
+  { title: "State management", body: "Redux where it earns its place, Context and local state where it does not." },
+  { title: "Real-time interfaces", body: "WebSocket-driven screens that stay in sync while people are working in them." },
+  { title: "Multiplayer collaboration", body: "Editor, canvas and output state shared across everyone in the same workspace." },
+  { title: "Live dashboards", body: "Numbers, charts and status that keep updating under sustained load." },
+  { title: "Messaging and notifications", body: "In-app messaging and delivery that stays responsive with many people connected." },
+  { title: "Scheduling and capacity", body: "Shift allocation, availability and workload, laid out for the people who run operations." },
+  { title: "Payment screens", body: "Checkout and transaction flows, with sensitive data handled carefully on the client." },
+  { title: "Multi-currency wallets", body: "Balances, conversions and live transaction state that agree with the ledger." },
+  { title: "Onboarding flows", body: "Multi-step forms and verification, with error states people can actually recover from." },
+  { title: "Permission-aware UI", body: "Screens that follow each role's access, enforced on the client and the server." },
+  { title: "Multi-tenant front ends", body: "One product serving many customers, with nothing leaking between them." },
+  { title: "Data-heavy tables", body: "Sorting, filtering and pagination over large sets without the page stuttering." },
+  { title: "Forms and validation", body: "Long forms where server errors land back on the field that caused them." },
+  { title: "REST integration", body: "Typed clients with loading and failure states, and retries where they help." },
+  { title: "GraphQL integration", body: "Queries and fragments shaped around what each screen genuinely needs." },
+  { title: "Responsive layouts", body: "One build that holds up from a phone to an ultrawide monitor." },
+  { title: "Tailwind CSS systems", body: "Utility-first styling kept consistent through shared tokens and patterns." },
+  { title: "Cross-browser support", body: "Safari included, and found during the work rather than after launch." },
+  { title: "Frontend performance", body: "Keeping a screen quick while it is redrawing constantly." },
+  { title: "Jest test suites", body: "Unit and integration cover over the paths that cost money when they break." },
+  { title: "Code review standards", body: "What gets reviewed, what blocks a release, and why the team agreed to it." },
+  { title: "CI/CD pipelines", body: "GitHub Actions running the checks and the deploys from the first commit." },
+  { title: "Product analytics", body: "PostHog wired in, so you can see what people do instead of guessing." },
+  { title: "Node.js and NestJS APIs", body: "Backend work when the front end needs an endpoint that does not exist yet." },
+  { title: "PostgreSQL modelling", body: "Schemas, row-level security and queries that stay quick as rows pile up." },
+  { title: "Docker deployments", body: "Self-hosted infrastructure, containers and reverse proxies that stay up." },
+  { title: "AWS infrastructure", body: "EC2, S3, RDS and Lambda for the services sitting behind the interface." },
 ];
 
 export const skillGroups = [

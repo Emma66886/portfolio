@@ -128,18 +128,113 @@ function ProjectCard({
   );
 }
 
+/**
+ * The ring itself is drawn by the background WebGL scene, which only needs an
+ * empty box to line itself up with. Everything readable stays here in HTML:
+ * the front panel's details, and a list of every project for screen readers
+ * and crawlers, which never see the canvas.
+ */
+function GalleryStage({
+  active,
+  index,
+  total,
+}: {
+  active: Project;
+  index: number;
+  total: number;
+}) {
+  return (
+    <div className="gallery">
+      <div className="gallery-stage" aria-hidden="true" />
+
+      <div className="wrap gallery-readout">
+        <p className="gallery-count">
+          <span>{String(index + 1).padStart(2, "0")}</span> /{" "}
+          {String(total).padStart(2, "0")}
+        </p>
+        <h3>{active.title}</h3>
+        <p className="gallery-body">{active.body}</p>
+        <p className="tech">{active.tech}</p>
+        {active.url && (
+          <a
+            className="project-link"
+            href={active.url}
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {active.url.replace(/^https:\/\/(www\.)?/, "").replace(/\/$/, "")}
+            <ExternalIcon />
+          </a>
+        )}
+        <p className="gallery-hint">Drag the ring, or use the arrows</p>
+      </div>
+
+      <ul className="sr-only">
+        {projects.map((project) => (
+          <li key={project.title}>
+            <h3>{project.title}</h3>
+            <p>{project.body}</p>
+            <p>{project.tech}</p>
+            {project.url && (
+              <a href={project.url} target="_blank" rel="noopener noreferrer">
+                {project.title} website
+              </a>
+            )}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function Projects() {
-  // The carousel only switches on after mount, so the server-rendered markup
-  // (and anyone without JS, or with reduced motion) gets the plain grid.
-  const [carousel, setCarousel] = useState(false);
+  // Server-rendered markup is always the plain grid, so the section works with
+  // no JS, no WebGL or reduced motion. After mount we upgrade to the 3D ring,
+  // or to the flat carousel where WebGL is unavailable.
+  const [mode, setMode] = useState<"grid" | "carousel" | "gallery">("grid");
+  const [activeIndex, setActiveIndex] = useState(0);
+  const carousel = mode === "carousel";
   const trackRef = useRef<HTMLDivElement>(null);
   const shiftRef = useRef<HTMLDivElement>(null);
   const nudgeRef = useRef<(direction: number) => void>(null);
 
   useEffect(() => {
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
-      setCarousel(true);
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    let webgl = false;
+    try {
+      const probe = document.createElement("canvas");
+      webgl = !!(probe.getContext("webgl2") || probe.getContext("webgl"));
+    } catch {
+      webgl = false;
+    }
+
+    if (!webgl) {
+      setMode("carousel");
+      return;
+    }
+
+    // Hand the scene what to draw; it picks this up on its next frame.
+    window.__galleryItems = projects.map(({ title, caption, image }) => ({
+      title,
+      caption,
+      image,
+    }));
+    setMode("gallery");
+
+    const onActive = (e: Event) =>
+      setActiveIndex((e as CustomEvent).detail.index as number);
+    window.addEventListener("gallery:active", onActive);
+    return () => {
+      window.removeEventListener("gallery:active", onActive);
+      delete window.__galleryItems;
+    };
   }, []);
+
+  const go = (direction: number) =>
+    window.dispatchEvent(
+      new CustomEvent("gallery:go", { detail: { direction } }),
+    );
 
   useEffect(() => {
     const track = trackRef.current;
@@ -262,22 +357,26 @@ export default function Projects() {
         <div className="section-head row reveal">
           <div>
             <p className="section-eyebrow">Featured Projects</p>
-            <h2>Selected Work</h2>
+            <h2>Selected Projects</h2>
           </div>
           <div className="head-actions">
-            {carousel && (
+            {mode !== "grid" && (
               <div className="carousel-nav">
                 <button
                   type="button"
-                  aria-label="Previous projects"
-                  onClick={() => nudgeRef.current?.(-1)}
+                  aria-label="Previous project"
+                  onClick={() =>
+                    mode === "gallery" ? go(-1) : nudgeRef.current?.(-1)
+                  }
                 >
                   <ArrowRightIcon className="flip" />
                 </button>
                 <button
                   type="button"
-                  aria-label="Next projects"
-                  onClick={() => nudgeRef.current?.(1)}
+                  aria-label="Next project"
+                  onClick={() =>
+                    mode === "gallery" ? go(1) : nudgeRef.current?.(1)
+                  }
                 >
                   <ArrowRightIcon />
                 </button>
@@ -298,11 +397,17 @@ export default function Projects() {
         </div>
       </div>
 
-      {carousel ? (
+      {mode === "gallery" ? (
+        <GalleryStage
+          active={projects[activeIndex] ?? projects[0]}
+          index={activeIndex}
+          total={projects.length}
+        />
+      ) : carousel ? (
         <div
           className="carousel"
           aria-roledescription="carousel"
-          aria-label="Selected work"
+          aria-label="Selected Projects"
         >
           {/* No `reveal` class here: this subtree mounts after useReveal has
               collected its elements, so it would never be marked visible. */}

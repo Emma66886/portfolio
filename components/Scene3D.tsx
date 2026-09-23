@@ -2,6 +2,10 @@
 
 import { useEffect, useRef } from "react";
 import * as THREE from "three";
+import { createConstellation } from "@/lib/constellation";
+import { createGallery } from "@/lib/gallery";
+import { createGlobe } from "@/lib/globe";
+import { createTimelineBeam } from "@/lib/timeline";
 import {
   glowFragment,
   glowVertex,
@@ -16,6 +20,14 @@ import {
 const PALETTE = ["#C63B50", "#C63B50", "#D9A56B", "#D9A56B", "#917065", "#F6ECE7"];
 const FOV = 60;
 const ORB_DEPTH = 6;
+/** Depth of the gallery ring's front panel. */
+const GALLERY_DEPTH = 9;
+/** Depth of the career timeline's light conduit. */
+const BEAM_DEPTH = 7;
+/** Depth of the skills constellation. */
+const SKILLS_DEPTH = 8;
+/** Depth of the services globe. */
+const GLOBE_DEPTH = 8;
 /** How far the camera flies into the field between the top and bottom of the page. */
 const SCROLL_TRAVEL = 24;
 
@@ -176,6 +188,162 @@ export default function Scene3D() {
     cursorLight.position.z = -8;
     camera.add(cursorLight);
 
+    // ---- Project gallery ring ----
+    // Built from what the Projects section publishes, and only while that
+    // section has put a stage element on the page (it does not under reduced
+    // motion, or without WebGL).
+    // Built lazily on the first frame that finds both the stage element and the
+    // published items, so it does not matter which component mounts first.
+    let gallery: ReturnType<typeof createGallery> | null = null;
+    let stage: HTMLElement | null = null;
+
+    const ensureGallery = () => {
+      if (gallery || reduced) return;
+      if (!stage) stage = document.querySelector<HTMLElement>(".gallery-stage");
+      const items = window.__galleryItems;
+      if (!stage || !items?.length) return;
+      gallery = createGallery({
+        items,
+        onActiveChange: (index) =>
+          window.dispatchEvent(new CustomEvent("gallery:active", { detail: { index } })),
+      });
+      camera.add(gallery.group);
+    };
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+    let galleryDrag = false;
+    let galleryMoved = 0;
+    let galleryLastX = 0;
+
+    const overStage = (e: PointerEvent) => {
+      if (!stage) return false;
+      const r = stage.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+
+    const onGalleryGo = (e: Event) => gallery?.go((e as CustomEvent).detail?.direction ?? 1, now());
+    window.addEventListener("gallery:go", onGalleryGo);
+
+    // ---- Services globe ----
+    let globe: ReturnType<typeof createGlobe> | null = null;
+    let globeStage: HTMLElement | null = null;
+    let globeTip: HTMLElement | null = null;
+    let globeCard: HTMLElement | null = null;
+    let globeActive = -1;
+    let globeHover = -1;
+    let globeDrag = false;
+    let globeMoved = 0;
+    let globeLast = { x: 0, y: 0 };
+
+    const ensureGlobe = () => {
+      if (globe || reduced) return;
+      if (!globeStage) globeStage = document.querySelector<HTMLElement>(".globe-stage");
+      const count = window.__globeCount;
+      if (!globeStage || !count) return;
+      globe = createGlobe(count);
+      globe.setPixelRatio(pixelRatio);
+      camera.add(globe.root);
+      globeTip = document.querySelector<HTMLElement>(".globe-tip");
+      globeCard = document.querySelector<HTMLElement>(".globe-card");
+    };
+
+    const setGlobeActive = (index: number) => {
+      if (index === globeActive || !globe) return;
+      globeActive = index;
+      measureCard = true;
+      globe.setActive(index);
+      window.dispatchEvent(new CustomEvent("globe:active", { detail: { index } }));
+    };
+
+    const setGlobeHover = (index: number) => {
+      if (index === globeHover) return;
+      globeHover = index;
+      window.dispatchEvent(new CustomEvent("globe:hover", { detail: { index } }));
+    };
+
+    const onGlobeClear = () => {
+      globeActive = -1;
+      globe?.setActive(-1);
+    };
+    window.addEventListener("globe:clear", onGlobeClear);
+
+    // Picked from the capability list rather than the globe itself.
+    const onGlobePick = (e: Event) => {
+      const index = (e as CustomEvent).detail?.index as number;
+      if (!globe || typeof index !== "number") return;
+      setGlobeActive(index);
+      globe.turnTo(index);
+    };
+    window.addEventListener("globe:pick", onGlobePick);
+
+    const overGlobe = (e: PointerEvent) => {
+      if (!globeStage) return false;
+      const r = globeStage.getBoundingClientRect();
+      return e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+    };
+
+    // Which marker, if any, is under the pointer.
+    const pickMarker = (e: PointerEvent) => {
+      if (!globe) return -1;
+      ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+      raycaster.setFromCamera(ndc, camera);
+      raycaster.params.Points.threshold = 0.05 * globe.root.scale.x;
+      const hits = raycaster.intersectObject(globe.markerPoints, false);
+      return hits.length && hits[0].index !== undefined ? hits[0].index : -1;
+    };
+
+    // ---- Skills constellation ----
+    // Built lazily like the gallery, since the Skills section only adds its
+    // stage after deciding it can be drawn.
+    let constellation: ReturnType<typeof createConstellation> | null = null;
+    let skillsStage: HTMLElement | null = null;
+
+    const ensureConstellation = () => {
+      if (constellation || reduced) return;
+      if (!skillsStage) skillsStage = document.querySelector<HTMLElement>(".skills-stage");
+      const groups = window.__skillGroups;
+      if (!skillsStage || !groups?.length) return;
+      constellation = createConstellation(groups);
+      constellation.setPixelRatio(pixelRatio);
+      camera.add(constellation.root);
+    };
+
+    const onSkillsFocus = (e: Event) =>
+      constellation?.setFocus((e as CustomEvent).detail?.group ?? null);
+    window.addEventListener("skills:focus", onSkillsFocus);
+
+    // ---- Career timeline conduit ----
+    // Replaces the CSS rule down the timeline. Role positions are measured from
+    // the DOM once and on resize, so each frame only reads one rect.
+    const beam = reduced ? null : createTimelineBeam();
+    let timelineEl: HTMLElement | null = null;
+    let beamObserver: ResizeObserver | null = null;
+    if (beam) camera.add(beam.mesh);
+
+    const measureTimeline = () => {
+      if (!beam || !timelineEl) return;
+      const rect = timelineEl.getBoundingClientRect();
+      if (!rect.height) return;
+      const dots = timelineEl.querySelectorAll<HTMLElement>(".tl-dot");
+      beam.setNodes(
+        Array.from(dots, (dot) => {
+          const r = dot.getBoundingClientRect();
+          return (r.top + r.height / 2 - rect.top) / rect.height;
+        })
+      );
+    };
+
+    const findTimeline = () => {
+      if (!beam || timelineEl) return;
+      timelineEl = document.querySelector<HTMLElement>(".timeline");
+      if (!timelineEl) return;
+      // Hand the line over: the CSS rule would otherwise double up with this.
+      timelineEl.classList.add("beam-on");
+      measureTimeline();
+      beamObserver = new ResizeObserver(measureTimeline);
+      beamObserver.observe(timelineEl);
+    };
+
     // ---- Input ----
     const pointer = { x: 0, y: 0, tx: 0, ty: 0, active: 0, targetActive: 0 };
     let clickTime = -99;
@@ -184,6 +352,36 @@ export default function Scene3D() {
     const now = () => (performance.now() - started) / 1000;
 
     const onPointerMove = (e: PointerEvent) => {
+      if (galleryDrag && gallery && stage) {
+        const dx = e.clientX - galleryLastX;
+        galleryLastX = e.clientX;
+        galleryMoved += Math.abs(dx);
+        gallery.drag(dx, stage.getBoundingClientRect().width);
+      } else if (gallery) {
+        gallery.setPointerOver(overStage(e));
+      }
+
+      if (globe) {
+        if (globeDrag) {
+          const dx = e.clientX - globeLast.x;
+          const dy = e.clientY - globeLast.y;
+          globeLast = { x: e.clientX, y: e.clientY };
+          globeMoved += Math.abs(dx) + Math.abs(dy);
+          globe.drag(dx, dy, globeStage?.getBoundingClientRect().width ?? 600);
+          setGlobeHover(-1);
+        } else {
+          const over = overGlobe(e);
+          globe.setPaused(over);
+          const marker = over ? pickMarker(e) : -1;
+          setGlobeHover(marker);
+          globeStage?.classList.toggle("on-marker", marker >= 0);
+          if (globeTip && marker >= 0) {
+            // The tag rides just above the pointer.
+            globeTip.style.setProperty("--x", `${e.clientX}px`);
+            globeTip.style.setProperty("--y", `${e.clientY}px`);
+          }
+        }
+      }
       pointer.tx = (e.clientX / window.innerWidth) * 2 - 1;
       pointer.ty = -(e.clientY / window.innerHeight) * 2 + 1;
       pointer.targetActive = 1;
@@ -192,11 +390,56 @@ export default function Scene3D() {
     const onPointerLeave = () => (pointer.targetActive = 0);
     const onPointerDown = (e: PointerEvent) => {
       if (reduced) return;
+      if (globe && overGlobe(e)) {
+        globeDrag = true;
+        globeMoved = 0;
+        globeLast = { x: e.clientX, y: e.clientY };
+        globe.startDrag();
+        globeStage?.classList.add("dragging");
+        return; // spinning the globe should not ripple the particle field
+      }
+      if (gallery && overStage(e)) {
+        galleryDrag = true;
+        galleryMoved = 0;
+        galleryLastX = e.clientX;
+        gallery.startDrag();
+        stage?.classList.add("dragging");
+        return; // spinning the ring should not also ripple the particle field
+      }
       fieldUniforms.uClick.value.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
       clickTime = now();
       orbPulse = 1;
     };
     const onTouchEnd = (e: PointerEvent) => {
+      if (globeDrag && globe) {
+        globeDrag = false;
+        globe.endDrag();
+        globeStage?.classList.remove("dragging");
+        if (globeMoved < 6) {
+          const marker = pickMarker(e);
+          if (marker >= 0) {
+            setGlobeActive(marker);
+            globe.turnTo(marker);
+          } else {
+            // Tapping empty space puts the card away.
+            globeActive = -1;
+            globe.setActive(-1);
+            window.dispatchEvent(new CustomEvent("globe:active", { detail: { index: -1 } }));
+          }
+        }
+      }
+      if (galleryDrag && gallery) {
+        galleryDrag = false;
+        gallery.endDrag();
+        stage?.classList.remove("dragging");
+        // A tap rather than a drag: bring the panel under the pointer forward.
+        if (galleryMoved < 6 && stage) {
+          ndc.set((e.clientX / window.innerWidth) * 2 - 1, -(e.clientY / window.innerHeight) * 2 + 1);
+          raycaster.setFromCamera(ndc, camera);
+          const index = gallery.hit(raycaster);
+          if (index >= 0) gallery.focus(index, now());
+        }
+      }
       if (e.pointerType !== "mouse") pointer.targetActive = 0;
     };
 
@@ -273,6 +516,56 @@ export default function Scene3D() {
       cursorLight.position.x = pointer.x * halfH * camera.aspect;
       cursorLight.position.y = pointer.y * halfH;
       (cursorLight.material as THREE.ShaderMaterial).uniforms.uOpacity.value = reduced ? 0 : pointer.active * 0.22;
+
+      if (beam) {
+        findTimeline();
+        if (timelineEl) {
+          const rect = timelineEl.getBoundingClientRect();
+          const h = window.innerHeight;
+          if (rect.bottom < -60 || rect.top > h + 60 || rect.height === 0) beam.hide();
+          else {
+            // Same trigger line as the CSS progress fill in useInteractions.
+            const progress = Math.min(Math.max((h * 0.6 - rect.top) / rect.height, 0), 1);
+            // The rule this replaces sits at `left: 5px` inside the timeline
+            // box, which is also where the role dots are centred.
+            beam.place(rect.left + 6, rect, h, tanHalfFov * BEAM_DEPTH, camera.aspect, BEAM_DEPTH, progress);
+          }
+        }
+        beam.update(time);
+      }
+
+      ensureGlobe();
+      if (globe) {
+        if (globeStage) {
+          const rect = globeStage.getBoundingClientRect();
+          const h = window.innerHeight;
+          if (rect.bottom < -60 || rect.top > h + 60 || rect.width === 0) globe.hide();
+          else globe.place(rect, h, tanHalfFov * GLOBE_DEPTH, camera.aspect, GLOBE_DEPTH);
+        }
+        globe.update(time, dt);
+      }
+
+      ensureConstellation();
+      if (constellation) {
+        if (skillsStage) {
+          const rect = skillsStage.getBoundingClientRect();
+          const h = window.innerHeight;
+          if (rect.bottom < -60 || rect.top > h + 60 || rect.width === 0) constellation.hide();
+          else constellation.place(rect, h, tanHalfFov * SKILLS_DEPTH, camera.aspect, SKILLS_DEPTH);
+        }
+        constellation.update(time, dt, pointer.x, pointer.y);
+      }
+
+      ensureGallery();
+      if (gallery) {
+        if (stage) {
+          const r = stage.getBoundingClientRect();
+          const h = window.innerHeight;
+          if (r.bottom < -80 || r.top > h + 80 || r.width === 0) gallery.hide();
+          else gallery.place(r, h, tanHalfFov * GALLERY_DEPTH, camera.aspect, GALLERY_DEPTH);
+        }
+        gallery.update(time, dt);
+      }
 
       placeOrb();
       if (orbGroup.visible) {
@@ -364,6 +657,33 @@ export default function Scene3D() {
       }
     };
 
+    /**
+     * Keeps the popup card stuck to its marker as the globe turns. Runs after
+     * the render, when the world matrices are up to date, and hides the card
+     * once the marker goes round the back.
+     */
+    let cardHeight = 190;
+    let measureCard = false;
+
+    const positionGlobeCard = () => {
+      if (!globe || !globeCard || globeActive < 0) return;
+      if (measureCard) {
+        // One layout read per selection, not per frame.
+        cardHeight = globeCard.getBoundingClientRect().height || cardHeight;
+        measureCard = false;
+      }
+      const at = globe.screenPosition(globeActive, camera);
+      // Keep the card on screen, and drop it below the marker when there is no
+      // room above (otherwise it rides up over the section heading).
+      const half = globeCard.offsetWidth / 2 + 12;
+      const x = Math.min(Math.max(at.x, half), window.innerWidth - half);
+      const below = at.y - cardHeight - 30 < 70;
+      globeCard.style.setProperty("--x", `${x}px`);
+      globeCard.style.setProperty("--y", `${at.y}px`);
+      globeCard.classList.toggle("below", below);
+      globeCard.classList.toggle("behind", !at.front);
+    };
+
     const loop = () => {
       frame = requestAnimationFrame(loop);
       const time = now();
@@ -371,6 +691,7 @@ export default function Scene3D() {
       last = time;
       update(time, dt);
       renderer.render(scene, camera);
+      positionGlobeCard();
       checkPerformance(time);
     };
 
@@ -426,6 +747,16 @@ export default function Scene3D() {
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
       document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("gallery:go", onGalleryGo);
+      gallery?.dispose();
+      constellation?.dispose();
+      globe?.dispose();
+      window.removeEventListener("globe:pick", onGlobePick);
+      window.removeEventListener("globe:clear", onGlobeClear);
+      window.removeEventListener("skills:focus", onSkillsFocus);
+      beam?.dispose();
+      beamObserver?.disconnect();
+      timelineEl?.classList.remove("beam-on");
       scene.traverse((obj) => {
         if (obj instanceof THREE.Mesh || obj instanceof THREE.Points || obj instanceof THREE.LineSegments) {
           obj.geometry.dispose();
