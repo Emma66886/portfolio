@@ -10,5 +10,9 @@ site; it is kept so the earlier wording and CV can be recovered or reused.
 | `Emmanuel-Akinroye-CV-full-stack-2026-09.pdf` | The full-stack CV, previously at `public/Emmanuel-Akinroye-CV.pdf` and `docs/`. Both copies were identical. |
 | `site-copy-full-stack-2026-09.ts` | The old `lib/data.ts`: full-stack role, services, skills and experience wording. |
 
-The live site now uses the frontend wording in `lib/data.ts` and a new CV at
-`public/Emmanuel-Akinroye-CV.pdf`.
+| `Emmanuel-Akinroye-CV-frontend-2026-10.pdf` | The frontend CV, used through September 2026. |
+| `site-copy-frontend-2026-10.ts` | The frontend `lib/data.ts`. |
+
+In October 2026 the positioning moved back to Senior Full-Stack Engineer, so
+both the full-stack and the frontend versions are kept here. The live site uses
+`lib/data.ts` and the CV at `public/Emmanuel-Akinroye-CV.pdf`.

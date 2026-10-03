@@ -24,22 +24,21 @@ export default function About() {
         <div className="reveal">
           <p className="section-eyebrow">About Me</p>
           <h2>
-            Interfaces People
+            Building Systems That
             <br />
-            Work In All Day
+            Carry Real Weight
           </h2>
           <p className="body">
-            I&apos;m a senior frontend engineer with over seven years of React in production. Most of
-            my work is the difficult end of the front end: screens that update in real time,
-            scheduling and capacity views, payment flows, and dashboards where being wrong costs
-            somebody money.
+            I&apos;m a senior full-stack engineer with over seven years building production
+            software that real businesses run on: multi-tenant SaaS, real-time systems and payments
+            infrastructure, from the database through the API to the screen.
           </p>
           <p className="body">
-            I work directly with founders on live codebases. I know the backend well enough to
-            design against it rather than around it, which is usually why teams bring me in. Recent
-            work includes a multiplayer collaborative editor, a UK healthcare platform and a
-            payments product I built from nothing. I work fully remote with teams anywhere. Today
-            I&apos;m CTO at Usefleet, still writing code most days.
+            I work directly with founders on live codebases, own architecture end to end, and stay
+            hands-on from schema design through to CI/CD and production monitoring. Recent work
+            includes a multiplayer collaborative editor, a UK healthcare platform and a payments
+            product I built from nothing. I work fully remote with teams anywhere. Today I&apos;m
+            CTO at Usefleet, still writing code most days.
           </p>
 
           <ul className="checks">

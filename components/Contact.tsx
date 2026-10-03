@@ -10,8 +10,8 @@ export default function Contact() {
       <div className="wrap cta-inner reveal">
         <h2>Let&apos;s Work Together</h2>
         <p>
-          Got a product whose front end needs a senior pair of hands? Tell me what you&apos;re
-          building.
+          Have a platform to build, or a codebase that needs a senior pair of hands? Tell me what
+          you&apos;re building.
         </p>
         <div className="cta-actions">
           <a href={`mailto:${profile.email}`} className="btn btn-primary magnetic">

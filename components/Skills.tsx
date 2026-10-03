@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { skillGroups } from "@/lib/data";
+import { certifications, skillGroups } from "@/lib/data";
 
 /** Tells the background scene which cluster to light, or -1 for all of them. */
 const focusGroup = (index: number | null) =>
@@ -62,6 +62,19 @@ export default function Skills() {
               </ul>
             </div>
           ))}
+        </div>
+
+        <div className="certs">
+          <h3 className="certs-head reveal">Certifications</h3>
+          <ul className="cert-list">
+            {certifications.map((cert) => (
+              <li className="cert spotlight reveal" key={`${cert.title}-${cert.issuer}-${cert.date}`}>
+                <span className="cert-issuer">{cert.issuer}</span>
+                <span className="cert-title">{cert.title}</span>
+                <span className="cert-date">{cert.date}</span>
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </section>
