@@ -62,8 +62,8 @@ story.append(Paragraph(
     "kinemcodes@gmail.com &nbsp;|&nbsp; +234 810 474 2511 &nbsp;|&nbsp; "
     '<a href="https://kinemcodes.com" color="#A32639"><b>kinemcodes.com</b></a> &nbsp;|&nbsp; '
     '<a href="https://github.com/emma66886">github.com/emma66886</a> &nbsp;|&nbsp; '
-    '<a href="https://www.linkedin.com/in/emmanuelakinroye/">linkedin.com/in/emmanuelakinroye</a>'
-    " &nbsp;|&nbsp; Remote, based in Nigeria", contact))
+    '<a href="https://www.linkedin.com/in/emmanuelakinroye/">linkedin.com/in/emmanuelakinroye</a>',
+    contact))
 story.append(Spacer(1, 3))
 
 # ---- Summary ----

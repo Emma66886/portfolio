@@ -10,7 +10,7 @@ export const profile = {
   linkedin: "https://www.linkedin.com/in/emmanuelakinroye/",
   cv: "/Emmanuel-Akinroye-CV.pdf",
   photo: "/emmanuel.jpg",
-  location: "Remote, based in Nigeria, working worldwide",
+  location: "Remote, working worldwide",
   current: "CTO & Full-Stack Engineer, Usefleet",
   education: "CS50x, Harvard (edX) · DVM, University of Ibadan",
   tagline:
