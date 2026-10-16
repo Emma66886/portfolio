@@ -80,6 +80,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html
       lang="en"
       className={`${jakarta.variable} ${fraunces.variable}`}
+      // Smooth scrolling stays for in-page anchors; Next switches it off while
+      // moving between pages, so arriving at /#about jumps rather than glides.
+      data-scroll-behavior="smooth"
       // The bootstrap script below adds `js-reveal` to <html> before React
       // hydrates, so the server and client markup differ by that one class.
       suppressHydrationWarning

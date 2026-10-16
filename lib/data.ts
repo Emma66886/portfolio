@@ -271,11 +271,13 @@ export const projects: Project[] = [
   },
 ];
 
+/** `#` links are homepage sections; anything else is its own page. */
 export const navLinks = [
   { href: "#home", label: "Home" },
   { href: "#about", label: "About" },
   { href: "#services", label: "Services" },
   { href: "#experience", label: "Experience" },
   { href: "#projects", label: "Projects" },
+  { href: "/games", label: "Games" },
   { href: "#contact", label: "Contact" },
 ];

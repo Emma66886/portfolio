@@ -28,15 +28,22 @@ app/
   not-found.tsx   # branded 404
   fonts/          # self-hosted variable woff2 (no build-time font fetch)
   page.tsx        # composes every section
+  games/          # /games index and one route per game (/games/ping-pong)
   globals.css     # design system + all component styles
-components/       # Nav, Hero, About, Services, Skills, Experience, Projects, Contact, Footer
+components/       # Nav, Hero, About, Services, Skills, Experience, Projects, Playground, Contact, Footer
   Icons.tsx       # inline SVG icon set (no unicode glyphs -> no tofu boxes)
+  games/          # game UI: PongGame (canvas, HUD, menus), PlayHistory, GameRecord
 lib/
   data.ts         # all CV content in one typed module (edit here, not in JSX)
   useReveal.ts    # IntersectionObserver scroll-reveal hook
+  games/
+    catalog.ts    # the list of games the index page shows
+    history.ts    # IndexedDB: finished matches and per-game settings
+    pong/         # engine.ts (rules, no rendering), scene.ts (three.js), sound.ts (WebAudio)
 public/
   emmanuel.jpg               # portrait used in the hero
   Emmanuel-Akinroye-CV.pdf   # served by the Download CV buttons
+  games/                     # card images for the games
 docs/             # design reference image + source CV
 ```
 
@@ -45,6 +52,22 @@ docs/             # design reference image + source CV
 Almost everything on the page (roles, bullet points, skills, projects and
 contact details) lives in [`lib/data.ts`](lib/data.ts). Update it there and every
 section re-renders from it.
+
+## Games
+
+`/games` lists small browser games; each one gets a route under `app/games/` and an
+entry in [`lib/games/catalog.ts`](lib/games/catalog.ts). The first is Ping Pong.
+
+- **Rules and rendering are separate.** `lib/games/pong/engine.ts` has no three.js in
+  it and runs at a fixed 120 steps a second; `scene.ts` only draws its state. That
+  split is what lets the CPU levels be tuned by simulating matches in Node.
+- **History stays in the browser.** Finished matches and settings are written to an
+  IndexedDB database called `akinroye-games` (stores `matches` and `prefs`). Nothing
+  is sent to a server. If storage is blocked (some private windows), the game still
+  plays and the history panel says so.
+- To add a game: add it to the catalog, create `app/games/<slug>/page.tsx`, and save
+  its matches through `usePlayHistory("<slug>")` so the index and homepage pick up
+  the player's record automatically.
 
 ## Design
 
