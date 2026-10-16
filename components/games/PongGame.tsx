@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { formatDuration, timeAgo } from "@/lib/games/format";
-import { getPref, setPref, summarize, type MatchRecord } from "@/lib/games/history";
+import { PauseIcon, SoundIcon } from "@/components/games/GameIcons";
+import { getPref, setPref, type PongMatch } from "@/lib/games/history";
 import {
   createAutopilot,
   createMatch,
@@ -16,6 +17,7 @@ import {
 } from "@/lib/games/pong/engine";
 import type { PongScene } from "@/lib/games/pong/scene";
 import { createSound } from "@/lib/games/pong/sound";
+import { summarizePong } from "@/lib/games/stats";
 
 const GAME = "ping-pong";
 const SETTINGS_KEY = `${GAME}:settings`;
@@ -48,14 +50,14 @@ const hudFrom = (m: Match): Hud => ({
   serving: m.phase === "serve" && m.server === "player",
 });
 
-function welcomeLine(status: string, matches: MatchRecord[]) {
+function welcomeLine(status: string, matches: PongMatch[]) {
   if (status === "unavailable") {
     return "This browser isn't letting the site store anything, so matches won't be saved this time.";
   }
   if (status !== "ready" || !matches.length) {
     return "Pick a level and see how long you can keep a rally going. Finished matches are saved in this browser.";
   }
-  const { wins, losses } = summarize(matches);
+  const { wins, losses } = summarizePong(matches);
   const last = matches[0];
   const level = DIFFICULTIES[last.difficulty as Difficulty]?.label.toLowerCase() ?? last.difficulty;
   return `Welcome back. You're ${wins}-${losses} against the CPU. Last match: ${
@@ -68,10 +70,10 @@ export default function PongGame({
   status,
   onMatchEnd,
 }: {
-  matches: MatchRecord[];
+  matches: PongMatch[];
   status: "loading" | "ready" | "unavailable";
   /** Resolves to false when the match could not be saved. */
-  onMatchEnd: (record: MatchRecord) => Promise<boolean>;
+  onMatchEnd: (record: PongMatch) => Promise<boolean>;
 }) {
   const stageRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -405,12 +407,12 @@ export default function PongGame({
   const level = DIFFICULTIES[settings.difficulty].label;
 
   return (
-    <div className="pong">
+    <div className="game">
       <div
         ref={stageRef}
-        className={`pong-stage${screen === "playing" ? " playing" : ""}`}
+        className={`game-stage${screen === "playing" ? " playing" : ""}`}
       >
-        <canvas ref={canvasRef} className="pong-canvas" aria-label="3D ping pong table" role="img" />
+        <canvas ref={canvasRef} className="game-canvas" aria-label="3D ping pong table" role="img" />
 
         {inMatch && (
           <div className="pong-hud">
@@ -429,10 +431,10 @@ export default function PongGame({
               First to {settings.target} · {level}
               {hud.rally > 1 && <span className="pong-rally"> · Rally {hud.rally}</span>}
             </p>
-            <div className="pong-tools">
+            <div className="game-tools">
               <button
                 type="button"
-                className="pong-tool"
+                className="game-tool"
                 // Mouse clicks drop focus, so Space serves instead of re-pressing this.
                 onClick={(e) => {
                   updateSettings({ muted: !settings.muted });
@@ -445,7 +447,7 @@ export default function PongGame({
               </button>
               <button
                 type="button"
-                className="pong-tool"
+                className="game-tool"
                 onClick={(e) => {
                   togglePause();
                   if (e.detail) e.currentTarget.blur();
@@ -459,25 +461,25 @@ export default function PongGame({
         )}
 
         {screen === "playing" && hud.serving && (
-          <p className="pong-prompt">Your serve. Click, tap or press Space</p>
+          <p className="game-prompt">Your serve. Click, tap or press Space</p>
         )}
         {screen === "playing" && flash && (
-          <p key={flash.key} className="pong-flash">
+          <p key={flash.key} className="game-flash">
             {flash.text}
           </p>
         )}
 
         {screen === "loading" && (
-          <div className="pong-overlay">
-            <p className="pong-loading">Setting up the table…</p>
+          <div className="game-overlay">
+            <p className="game-loading">Setting up the table…</p>
           </div>
         )}
 
         {screen === "unsupported" && (
-          <div className="pong-overlay">
-            <div className="pong-panel">
+          <div className="game-overlay">
+            <div className="game-panel">
               <h2>This one needs WebGL</h2>
-              <p className="pong-copy">
+              <p className="game-copy">
                 Your browser couldn&apos;t start a 3D context, so the table can&apos;t be drawn. Turning on
                 hardware acceleration usually fixes it, or try another browser.
               </p>
@@ -486,13 +488,13 @@ export default function PongGame({
         )}
 
         {screen === "menu" && (
-          <div className="pong-overlay">
-            <div className="pong-panel">
+          <div className="game-overlay">
+            <div className="game-panel">
               <p className="section-eyebrow">Ping Pong</p>
               <h2>{status === "ready" && matches.length ? "Back for another?" : "Ready when you are"}</h2>
-              <p className="pong-copy">{welcomeLine(status, matches)}</p>
+              <p className="game-copy">{welcomeLine(status, matches)}</p>
 
-              <fieldset className="pong-choice">
+              <fieldset className="game-choice">
                 <legend>Difficulty</legend>
                 {(Object.keys(DIFFICULTIES) as Difficulty[]).map((d) => (
                   <label key={d}>
@@ -508,7 +510,7 @@ export default function PongGame({
                 ))}
               </fieldset>
 
-              <fieldset className="pong-choice">
+              <fieldset className="game-choice">
                 <legend>Match</legend>
                 {TARGETS.map((t) => (
                   <label key={t}>
@@ -524,10 +526,10 @@ export default function PongGame({
                 ))}
               </fieldset>
 
-              <button type="button" className="btn btn-primary pong-start" onClick={startMatch}>
+              <button type="button" className="btn btn-primary game-start" onClick={startMatch}>
                 Start match
               </button>
-              <p className="pong-keys">
+              <p className="game-keys">
                 Mouse, touch or arrow keys to move. Where the ball meets your paddle sets the angle.
               </p>
             </div>
@@ -535,13 +537,13 @@ export default function PongGame({
         )}
 
         {screen === "paused" && (
-          <div className="pong-overlay">
-            <div className="pong-panel">
+          <div className="game-overlay">
+            <div className="game-panel">
               <h2>Paused</h2>
-              <p className="pong-copy">
+              <p className="game-copy">
                 You {hud.player}, CPU {hud.cpu}. First to {settings.target} on {level.toLowerCase()}.
               </p>
-              <div className="pong-actions">
+              <div className="game-actions">
                 <button type="button" className="btn btn-primary" onClick={togglePause} autoFocus>
                   Resume
                 </button>
@@ -549,20 +551,20 @@ export default function PongGame({
                   Quit match
                 </button>
               </div>
-              <p className="pong-keys">Quitting leaves this match out of your history.</p>
+              <p className="game-keys">Quitting leaves this match out of your history.</p>
             </div>
           </div>
         )}
 
         {screen === "over" && result && (
-          <div className="pong-overlay">
-            <div className="pong-panel">
+          <div className="game-overlay">
+            <div className="game-panel">
               <p className="section-eyebrow">{result.winner === "player" ? "Match won" : "Match lost"}</p>
               <h2>
                 {result.winner === "player" ? "You took it " : "CPU takes it "}
                 {Math.max(result.player, result.cpu)}-{Math.min(result.player, result.cpu)}
               </h2>
-              <ul className="pong-stats">
+              <ul className="game-stats">
                 <li>
                   <strong>{result.longestRally}</strong>
                   <span>Longest rally</span>
@@ -576,14 +578,14 @@ export default function PongGame({
                   <span>Level</span>
                 </li>
               </ul>
-              <p className="pong-keys" role="status">
+              <p className="game-keys" role="status">
                 {result.saved === null
                   ? "Saving to your history…"
                   : result.saved
                     ? "Saved to your history below."
                     : "Couldn't save this one. Your browser is blocking site storage."}
               </p>
-              <div className="pong-actions">
+              <div className="game-actions">
                 <button type="button" className="btn btn-primary" onClick={startMatch} autoFocus>
                   Play again
                 </button>
@@ -599,7 +601,7 @@ export default function PongGame({
       <p className="sr-only" aria-live="polite">
         {announce}
       </p>
-      <p className="pong-help">
+      <p className="game-help">
         <span>
           <kbd>←</kbd> <kbd>→</kbd> or mouse to move
         </span>
@@ -611,37 +613,5 @@ export default function PongGame({
         </span>
       </p>
     </div>
-  );
-}
-
-function PauseIcon() {
-  return (
-    <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
-      <rect x="6" y="5" width="4" height="14" rx="1.2" />
-      <rect x="14" y="5" width="4" height="14" rx="1.2" />
-    </svg>
-  );
-}
-
-function SoundIcon({ muted }: { muted: boolean }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      width="18"
-      height="18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M4 9.5h3.5L12 5.5v13l-4.5-4H4z" fill="currentColor" stroke="none" />
-      {muted ? (
-        <path d="m16 9.5 5 5m0-5-5 5" />
-      ) : (
-        <path d="M15.5 9a4.2 4.2 0 0 1 0 6M18 6.5a7.8 7.8 0 0 1 0 11" />
-      )}
-    </svg>
   );
 }

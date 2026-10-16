@@ -1,7 +1,7 @@
 "use client";
 
-import PlayHistory from "@/components/games/PlayHistory";
 import PongGame from "@/components/games/PongGame";
+import PongHistory from "@/components/games/PongHistory";
 import { usePlayHistory } from "@/lib/games/usePlayHistory";
 
 export default function PingPong() {
@@ -9,8 +9,8 @@ export default function PingPong() {
 
   return (
     <>
-      <PongGame matches={history.matches} status={history.status} onMatchEnd={history.record} />
-      <PlayHistory matches={history.matches} status={history.status} onClear={history.clear} />
+      <PongGame matches={history.records} status={history.status} onMatchEnd={history.record} />
+      <PongHistory matches={history.records} status={history.status} onClear={history.clear} />
     </>
   );
 }

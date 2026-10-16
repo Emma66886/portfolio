@@ -864,23 +864,23 @@ html{scrollbar-width:thin;scrollbar-color:var(--primary) rgba(217,157,133,.06);s
 .game-soon h2{font-family:var(--serif);font-weight:600;font-size:1.5rem}
 .game-soon p:last-child{font-size:.9rem;color:var(--muted);line-height:1.7;max-width:42ch}
 
-/* ---------- Ping pong stage ---------- */
-.pong{margin-bottom:56px}
-.pong-stage{
+/* ---------- Game stage, overlays and toolbar (shared by every game) ---------- */
+.game{margin-bottom:56px}
+.game-stage{
   position:relative;width:100%;aspect-ratio:16/9;max-height:calc(100svh - 140px);min-height:360px;
   overflow:hidden;border-radius:var(--radius-lg);border:1px solid var(--border-str);
   background:var(--bg);box-shadow:var(--shadow);user-select:none;-webkit-user-select:none;
 }
 /* Only while a match is live, so the stage never traps a scroll on the menus. */
-.pong-stage.playing{touch-action:none}
-.pong-stage.playing .pong-canvas{cursor:none}
-.pong-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+.game-stage.playing{touch-action:none}
+.game-stage.playing .game-canvas{cursor:none}
+.game-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 
 .pong-hud{
   position:absolute;inset:0 0 auto 0;display:flex;align-items:flex-start;justify-content:space-between;
   gap:12px;padding:14px 16px;pointer-events:none;
 }
-.pong-score,.pong-tool{background:rgba(20,14,13,.74);border:1px solid var(--border);backdrop-filter:blur(6px)}
+.pong-score,.game-tool{background:rgba(20,14,13,.74);border:1px solid var(--border);backdrop-filter:blur(6px)}
 .pong-score{display:flex;align-items:center;gap:12px;padding:8px 14px 12px;border-radius:12px}
 .pong-side{display:flex;align-items:center;gap:9px}
 .pong-side strong{font-size:1.6rem;font-weight:800;line-height:1;min-width:1.3ch;text-align:center;font-variant-numeric:tabular-nums;color:var(--primary-lt)}
@@ -897,73 +897,73 @@ html{scrollbar-width:thin;scrollbar-color:var(--primary) rgba(217,157,133,.06);s
   font-size:.74rem;letter-spacing:.08em;color:var(--text-2);text-shadow:0 1px 6px rgba(0,0,0,.85);
 }
 .pong-rally{color:var(--accent);font-variant-numeric:tabular-nums}
-.pong-tools{display:flex;gap:8px;pointer-events:auto}
-.pong-tool{
+.game-tools{display:flex;gap:8px;pointer-events:auto}
+.game-tool{
   width:38px;height:38px;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:var(--text-2);
   transition:background .2s,color .2s,border-color .2s;
 }
-.pong-tool:hover{background:rgba(163,38,57,.38);border-color:rgba(198,59,80,.5);color:#fff}
+.game-tool:hover{background:rgba(163,38,57,.38);border-color:rgba(198,59,80,.5);color:#fff}
 
-.pong-prompt{
+.game-prompt{
   position:absolute;left:50%;bottom:18px;transform:translateX(-50%);white-space:nowrap;pointer-events:none;
   padding:9px 18px;border-radius:99px;font-size:.84rem;font-weight:600;
   background:rgba(20,14,13,.8);border:1px solid var(--border-str);animation:prompt-pulse 1.8s ease-in-out infinite;
 }
 @keyframes prompt-pulse{50%{border-color:rgba(217,165,107,.75)}}
-.pong-flash{
+.game-flash{
   position:absolute;left:50%;top:36%;white-space:nowrap;pointer-events:none;
   font-family:var(--serif);font-size:clamp(1.6rem,4vw,2.6rem);font-weight:600;
-  text-shadow:0 4px 24px rgba(0,0,0,.85);animation:pong-flash 1.1s ease forwards;
+  text-shadow:0 4px 24px rgba(0,0,0,.85);animation:game-flash 1.1s ease forwards;
 }
-@keyframes pong-flash{
+@keyframes game-flash{
   0%{opacity:0;transform:translate(-50%,-30%) scale(.92)}
   15%{opacity:1;transform:translate(-50%,-50%) scale(1)}
   70%{opacity:1;transform:translate(-50%,-50%)}
   100%{opacity:0;transform:translate(-50%,-64%)}
 }
 
-.pong-overlay{
+.game-overlay{
   position:absolute;inset:0;display:grid;place-items:center;padding:20px;overflow:auto;
   background:radial-gradient(80% 80% at 50% 55%,rgba(20,14,13,.45) 0%,rgba(20,14,13,.84) 100%);
   animation:fade-in .35s ease;
 }
-.pong-panel{
+.game-panel{
   width:min(460px,100%);text-align:center;padding:26px 28px 24px;border-radius:var(--radius-lg);
   background:linear-gradient(160deg,rgba(43,29,26,.93),rgba(26,18,17,.93));
   border:1px solid var(--border-str);box-shadow:var(--shadow);
 }
-.pong-panel .section-eyebrow{margin-bottom:8px}
-.pong-panel h2{font-family:var(--serif);font-weight:600;font-size:clamp(1.5rem,3vw,2rem);margin-bottom:10px}
-.pong-copy{color:var(--text-2);font-size:.92rem;line-height:1.6;margin-bottom:18px}
-.pong-loading{color:var(--text-2);font-size:.9rem;letter-spacing:.06em}
-.pong-choice{border:0;margin:0 0 14px;padding:0;display:flex;justify-content:center;flex-wrap:wrap;gap:6px}
-.pong-choice legend{
+.game-panel .section-eyebrow{margin-bottom:8px}
+.game-panel h2{font-family:var(--serif);font-weight:600;font-size:clamp(1.5rem,3vw,2rem);margin-bottom:10px}
+.game-copy{color:var(--text-2);font-size:.92rem;line-height:1.6;margin-bottom:18px}
+.game-loading{color:var(--text-2);font-size:.9rem;letter-spacing:.06em}
+.game-choice{border:0;margin:0 0 14px;padding:0;display:flex;justify-content:center;flex-wrap:wrap;gap:6px}
+.game-choice legend{
   width:100%;padding:0;margin-bottom:8px;
   font-size:.66rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
 }
-.pong-choice label{position:relative;cursor:pointer}
-.pong-choice input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
-.pong-choice span{
+.game-choice label{position:relative;cursor:pointer}
+.game-choice input{position:absolute;inset:0;margin:0;opacity:0;cursor:pointer}
+.game-choice span{
   display:inline-block;padding:8px 16px;border-radius:99px;font-size:.86rem;font-weight:600;color:var(--text-2);
   background:rgba(255,255,255,.045);border:1px solid var(--border);transition:background .2s,border-color .2s,color .2s;
 }
-.pong-choice label:hover span{border-color:var(--border-str);color:var(--text)}
-.pong-choice input:checked + span{background:rgba(163,38,57,.38);border-color:var(--primary-lt);color:#fff}
-.pong-choice input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
-.pong-start{margin-top:6px}
-.pong-keys{font-size:.78rem;color:var(--muted);line-height:1.55;margin-top:14px}
-.pong-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:16px}
-.pong-stats{display:flex;justify-content:center;gap:28px;margin:8px 0 4px}
-.pong-stats li{display:flex;flex-direction:column}
-.pong-stats strong{font-size:1.3rem;color:var(--accent);font-variant-numeric:tabular-nums}
-.pong-stats span{font-size:.72rem;letter-spacing:.04em;color:var(--muted)}
+.game-choice label:hover span{border-color:var(--border-str);color:var(--text)}
+.game-choice input:checked + span{background:rgba(163,38,57,.38);border-color:var(--primary-lt);color:#fff}
+.game-choice input:focus-visible + span{outline:2px solid var(--accent);outline-offset:2px}
+.game-start{margin-top:6px}
+.game-keys{font-size:.78rem;color:var(--muted);line-height:1.55;margin-top:14px}
+.game-actions{display:flex;justify-content:center;flex-wrap:wrap;gap:10px;margin-top:16px}
+.game-stats{display:flex;justify-content:center;gap:28px;margin:8px 0 4px}
+.game-stats li{display:flex;flex-direction:column}
+.game-stats strong{font-size:1.3rem;color:var(--accent);font-variant-numeric:tabular-nums}
+.game-stats span{font-size:.72rem;letter-spacing:.04em;color:var(--muted)}
 
-.pong-help{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 26px;margin-top:16px;font-size:.8rem;color:var(--muted)}
+.game-help{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 26px;margin-top:16px;font-size:.8rem;color:var(--muted)}
 kbd{
   font-family:var(--sans);font-size:.74rem;font-weight:700;color:var(--text-2);padding:2px 7px;border-radius:6px;
   background:var(--surface);border:1px solid var(--border-str);border-bottom-width:2px;
 }
-@media (hover:none){.pong-help{display:none}}
+@media (hover:none){.game-help{display:none}}
 
 /* ---------- Play history ---------- */
 .history{
@@ -1018,7 +1018,22 @@ kbd{
 .playground{background:linear-gradient(180deg,rgba(20,14,13,.2) 0%,rgba(26,18,17,.5) 100%)}
 .playground-inner{display:grid;grid-template-columns:1fr 1.1fr;gap:56px;align-items:center}
 .playground-copy .body{margin-bottom:22px}
-.playground-record{margin:-6px 0 22px;font-size:.9rem;color:var(--accent)}
+/* The hero centres its buttons on small screens; this section stays left-aligned. */
+.playground .hero-actions{justify-content:flex-start}
+.playground-list{display:grid;gap:10px;margin-bottom:26px}
+.playground-game{
+  display:block;padding:14px 18px;border-radius:var(--radius);
+  background:rgba(34,23,21,.6);border:1px solid var(--border);transition:border-color .25s,background .25s;
+}
+.playground-game:hover{border-color:rgba(198,59,80,.45);background:rgba(43,29,26,.8)}
+.playground-game-title{display:flex;align-items:center;gap:8px;font-weight:700}
+.playground-game:hover .arrow{transform:translateX(4px)}
+.playground-game .arrow{display:inline-grid;color:var(--primary-lt);transition:transform .2s}
+.playground-record{margin-top:3px;font-size:.86rem;color:var(--accent)}
+/* Two screenshots overlapping, like prints on a desk. */
+.playground-shots{position:relative;aspect-ratio:16/12}
+.playground-shots .shot-0{position:absolute;top:0;right:0;width:82%}
+.playground-shots .shot-1{position:absolute;bottom:0;left:0;width:60%;z-index:2}
 .playground-shot{
   position:relative;display:block;aspect-ratio:16/10;overflow:hidden;border-radius:var(--radius-lg);
   border:1px solid var(--border-str);box-shadow:var(--shadow);
@@ -1040,14 +1055,14 @@ kbd{
 }
 @media (max-width:700px){
   .games-page{padding-top:108px}
-  .pong-stage{aspect-ratio:3/4;border-radius:var(--radius)}
+  .game-stage{aspect-ratio:3/4;border-radius:var(--radius)}
   .pong-hud{padding:10px}
   .pong-meta{left:12px;top:66px;transform:none}
-  .pong-overlay{padding:12px}
-  .pong-panel{padding:20px 16px 18px}
-  .pong-copy{font-size:.86rem;margin-bottom:14px}
-  .pong-panel .pong-start + .pong-keys{display:none}
-  .pong-stats{gap:18px}
+  .game-overlay{padding:12px}
+  .game-panel{padding:20px 16px 18px}
+  .game-copy{font-size:.86rem;margin-bottom:14px}
+  .game-panel .game-start + .game-keys{display:none}
+  .game-stats{gap:18px}
   .history{padding:22px 16px}
   .history-stats{grid-template-columns:repeat(3,1fr);gap:8px}
   .history-stats li{padding:10px 12px}
@@ -1059,5 +1074,126 @@ kbd{
   .history-detail{grid-column:2 / -1;font-size:.8rem}
 }
 @media (prefers-reduced-motion:reduce){
-  .pong-prompt{animation:none}
+  .game-prompt{animation:none}
 }
+
+/* ---------- Blockfall ---------- */
+.blocks-hud{position:absolute;top:14px;right:16px;pointer-events:none}
+.blocks-callout{top:24%;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
+.blocks-callout span{font-family:var(--sans);font-size:.5em;font-weight:800;color:var(--accent);letter-spacing:.02em}
+.game-link{
+  background:none;border:0;padding:0;font:inherit;color:var(--text-2);cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;
+}
+.game-link:hover{color:var(--primary-lt)}
+@media (hover:none){.only-keys{display:none}}
+@media (hover:hover){.only-touch{display:none}}
+
+.history-order{display:inline-flex;gap:4px;padding:4px;margin-bottom:12px;border-radius:99px;background:rgba(0,0,0,.2);border:1px solid var(--border)}
+.history-order button{
+  padding:6px 14px;border-radius:99px;border:0;background:none;font:inherit;font-size:.8rem;font-weight:600;
+  color:var(--muted);cursor:pointer;transition:background .2s,color .2s;
+}
+.history-order button[aria-pressed="true"]{background:rgba(163,38,57,.38);color:#fff}
+.history-row.runs{grid-template-columns:minmax(130px,auto) 1fr 1fr auto}
+.history-best{
+  margin-left:10px;padding:2px 8px;border-radius:99px;vertical-align:2px;
+  font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--bg);background:var(--accent);
+}
+
+@media (max-width:700px){
+  .blocks-stage{aspect-ratio:7/10}
+  .blocks-hud{top:10px;right:10px}
+  .history-row.runs{grid-template-columns:1fr auto;gap:4px 12px}
+  .history-row.runs .history-when{grid-column:2;grid-row:1}
+  .history-row.runs .history-detail{grid-column:1 / -1}
+}
+
+/* ---------- Hot Lap ---------- */
+.race-stage [hidden]{display:none !important}
+.race-hud{position:absolute;inset:0;pointer-events:none}
+.race-hud .game-tools{position:absolute;top:14px;right:16px;pointer-events:auto}
+.race-panel{background:rgba(20,14,13,.72);border:1px solid var(--border);backdrop-filter:blur(6px);border-radius:12px}
+.race-timing{position:absolute;top:14px;left:16px;padding:10px 16px;min-width:150px}
+.race-lap{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+.race-lap strong{font-size:1rem;color:var(--text)}
+.race-time strong{font-size:1.7rem;font-weight:800;line-height:1.15;font-variant-numeric:tabular-nums}
+.race-best{font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.race-best span{font-weight:700;color:var(--accent)}
+.race-gap{
+  position:absolute;top:18px;left:50%;transform:translateX(-50%);white-space:nowrap;
+  padding:7px 14px;border-radius:99px;font-size:.9rem;font-weight:800;font-variant-numeric:tabular-nums;
+  color:#FF8A8A;background:rgba(20,14,13,.8);border:1px solid var(--border-str);
+}
+.race-gap[data-ahead="true"]{color:#5ED08A}
+.race-map{
+  position:absolute;left:16px;bottom:16px;width:min(170px,26%);height:auto;padding:10px;
+  background:rgba(20,14,13,.6);border:1px solid var(--border);border-radius:12px;
+}
+.race-map-track{fill:none;stroke:rgba(246,236,231,.5);stroke-width:12;stroke-linejoin:round}
+.race-map-start{fill:var(--text)}
+.race-map-car{fill:var(--primary-lt);stroke:#fff;stroke-width:5}
+.race-map-ghost{fill:var(--accent);opacity:.8}
+.race-speed{position:absolute;right:16px;bottom:16px;display:flex;flex-direction:column;align-items:flex-end;padding:10px 18px}
+.race-speed strong{font-size:2.4rem;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+.race-speed span{font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.race-speed b{color:var(--accent)}
+.race-count{
+  position:absolute;left:50%;top:40%;pointer-events:none;
+  font-family:var(--serif);font-size:clamp(3rem,10vw,6rem);font-weight:600;
+  text-shadow:0 6px 30px rgba(0,0,0,.8);animation:race-count .9s ease forwards;
+}
+.race-count.go{color:#5ED08A}
+@keyframes race-count{
+  0%{opacity:0;transform:translate(-50%,-50%) scale(1.4)}
+  20%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  75%{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  100%{opacity:0;transform:translate(-50%,-50%) scale(.9)}
+}
+.race-wrong{
+  position:absolute;left:50%;top:30%;transform:translateX(-50%);padding:8px 20px;border-radius:10px;
+  font-size:.9rem;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#fff;
+  background:rgba(163,38,57,.9);pointer-events:none;
+}
+.race-toast{top:26%;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:clamp(1.3rem,3vw,2rem)}
+.race-toast span{font-family:var(--sans);font-size:.5em;font-weight:800;color:var(--accent)}
+.game-stats .race-ahead{color:#5ED08A}
+.game-stats .race-behind{color:#FF8A8A}
+.race-laps{display:grid;gap:4px;max-width:240px;margin:12px auto 0;padding:0;list-style:none;font-size:.86rem;font-variant-numeric:tabular-nums}
+.race-laps li{display:flex;justify-content:space-between;padding:4px 10px;border-radius:8px;color:var(--text-2)}
+.race-laps li.best{font-weight:700;color:var(--accent);background:rgba(217,165,107,.12)}
+
+/* Touch: steering on the left thumb, pedals on the right. */
+.race-touch{position:absolute;inset:auto 0 0 0;display:none;justify-content:space-between;align-items:flex-end;padding:14px;pointer-events:none}
+.race-touch > div{display:flex;align-items:flex-end;gap:10px;pointer-events:auto}
+.race-touch button{
+  width:66px;height:66px;border-radius:16px;display:grid;place-items:center;
+  font:inherit;font-size:.78rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--text);
+  background:rgba(20,14,13,.55);border:1px solid var(--border-str);
+  touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;
+}
+.race-touch button:active{background:rgba(163,38,57,.45)}
+.race-touch .race-brake{background:rgba(198,59,80,.22);border-color:rgba(198,59,80,.55)}
+.race-touch .race-gas{height:86px;background:rgba(94,208,138,.18);border-color:rgba(94,208,138,.55)}
+@media (hover:none){
+  .race-touch{display:flex}
+  /* The controls take the bottom corners, so the map and speed move up. */
+  .race-map{top:64px;right:16px;bottom:auto;left:auto;width:min(120px,32%)}
+  .race-speed{top:122px;left:16px;right:auto;bottom:auto;align-items:flex-start;padding:6px 12px}
+  .race-speed strong{font-size:1.6rem}
+  .race-gap{top:auto;bottom:118px}
+}
+@media (max-width:700px){
+  .race-stage{aspect-ratio:3/4}
+  .race-stage .game-choice{margin-bottom:10px}
+  .race-timing{top:10px;left:10px;padding:8px 12px;min-width:0}
+  .race-time strong{font-size:1.3rem}
+  .race-hud .game-tools{top:10px;right:10px}
+}
+
+/* Three screenshots on the homepage once there are three games. */
+.playground-shots .shot-2{position:absolute;bottom:6%;right:0;width:46%;z-index:3}
+.playground-shots:has(.shot-2) .shot-0{width:72%}
+.playground-shots:has(.shot-2) .shot-1{width:56%;bottom:0}
+.playground-shots:has(.shot-2) .shot-0 .playground-tag{top:14px;bottom:auto}

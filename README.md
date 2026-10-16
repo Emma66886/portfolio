@@ -28,18 +28,23 @@ app/
   not-found.tsx   # branded 404
   fonts/          # self-hosted variable woff2 (no build-time font fetch)
   page.tsx        # composes every section
-  games/          # /games index and one route per game (/games/ping-pong)
+  games/          # /games index and one route per game (ping-pong, blockfall, hot-lap)
   globals.css     # design system + all component styles
 components/       # Nav, Hero, About, Services, Skills, Experience, Projects, Playground, Contact, Footer
   Icons.tsx       # inline SVG icon set (no unicode glyphs -> no tofu boxes)
-  games/          # game UI: PongGame (canvas, HUD, menus), PlayHistory, GameRecord
+  games/          # per game: <Game>Game (canvas, menus, input) and <Game>History;
+                  # shared: HistoryPanel, GameRecord, GameIcons
 lib/
   data.ts         # all CV content in one typed module (edit here, not in JSX)
   useReveal.ts    # IntersectionObserver scroll-reveal hook
   games/
     catalog.ts    # the list of games the index page shows
-    history.ts    # IndexedDB: finished matches and per-game settings
-    pong/         # engine.ts (rules, no rendering), scene.ts (three.js), sound.ts (WebAudio)
+    history.ts    # IndexedDB: finished games (one record type per game) and settings
+    stats.ts      # per-game summaries and the "your record" line
+    audio.ts      # tiny WebAudio synth shared by every game's sound effects
+    pong/         # engine.ts (rules, no rendering), scene.ts (three.js), sound.ts
+    blockfall/    # the same split for the falling-block puzzle
+    hotlap/       # the same again, plus track.ts: the circuit as sampled curve data
 public/
   emmanuel.jpg               # portrait used in the hero
   Emmanuel-Akinroye-CV.pdf   # served by the Download CV buttons
@@ -56,18 +61,23 @@ section re-renders from it.
 ## Games
 
 `/games` lists small browser games; each one gets a route under `app/games/` and an
-entry in [`lib/games/catalog.ts`](lib/games/catalog.ts). The first is Ping Pong.
+entry in [`lib/games/catalog.ts`](lib/games/catalog.ts). So far: Ping Pong,
+Blockfall (a falling-block puzzle, deliberately not called Tetris, which is a
+trademark its owners enforce) and Hot Lap (a time-trial racer).
 
-- **Rules and rendering are separate.** `lib/games/pong/engine.ts` has no three.js in
-  it and runs at a fixed 120 steps a second; `scene.ts` only draws its state. That
-  split is what lets the CPU levels be tuned by simulating matches in Node.
-- **History stays in the browser.** Finished matches and settings are written to an
-  IndexedDB database called `akinroye-games` (stores `matches` and `prefs`). Nothing
+- **Rules and rendering are separate.** Each game's `engine.ts` has no three.js in it
+  and runs at a fixed 120 steps a second; `scene.ts` only draws its state. That split
+  is what lets the Pong CPU be tuned and the Blockfall rules be tested by playing
+  games headlessly in Node.
+- **History stays in the browser.** Finished games and settings are written to an
+  IndexedDB database called `akinroye-games` (stores `matches` and `prefs`). Hot Lap
+  also keeps your best lap there as a ghost replay (`prefs` key `hot-lap:ghost`). Nothing
   is sent to a server. If storage is blocked (some private windows), the game still
   plays and the history panel says so.
-- To add a game: add it to the catalog, create `app/games/<slug>/page.tsx`, and save
-  its matches through `usePlayHistory("<slug>")` so the index and homepage pick up
-  the player's record automatically.
+- To add a game: add a record type for it to the `PlayRecord` union in `history.ts`,
+  a line for it in `recordLine` in `stats.ts`, an entry in the catalog and a route at
+  `app/games/<slug>/page.tsx`. Save finished games through `usePlayHistory("<slug>")`
+  and the index and homepage pick up the player's record automatically.
 
 ## Design
 

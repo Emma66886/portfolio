@@ -7,10 +7,16 @@
  * unavailable" rather than an error worth showing.
  */
 
-export type MatchRecord = {
+type Base = {
   id?: number;
-  /** Slug from lib/games/catalog.ts. */
-  game: string;
+  /** Seconds of play, not counting pauses. */
+  duration: number;
+  /** Epoch milliseconds. */
+  endedAt: number;
+};
+
+export type PongMatch = Base & {
+  game: "ping-pong";
   result: "win" | "loss";
   playerScore: number;
   opponentScore: number;
@@ -18,15 +24,46 @@ export type MatchRecord = {
   /** Points needed to win the match. */
   target: number;
   longestRally: number;
-  /** Seconds of play, not counting pauses. */
-  duration: number;
-  /** Epoch milliseconds. */
-  endedAt: number;
 };
+
+export type BlockfallRun = Base & {
+  game: "blockfall";
+  score: number;
+  lines: number;
+  /** Level reached when the stack topped out. */
+  level: number;
+  startLevel: number;
+  pieces: number;
+  /** Four-line clears. */
+  quads: number;
+  tSpins: number;
+  maxCombo: number;
+};
+
+export type HotLapRun = Base & {
+  game: "hot-lap";
+  /** Laps in the race. */
+  laps: number;
+  /** Seconds, the sum of every lap. */
+  totalTime: number;
+  bestLap: number;
+  lapTimes: number[];
+  /** The best lap beat the pace car's. */
+  beatPace: boolean;
+  /** Times the car hit the barrier. */
+  hits: number;
+};
+
+/** One finished game. Each game's records carry its own slug from lib/games/catalog.ts. */
+export type PlayRecord = PongMatch | BlockfallRun | HotLapRun;
+export type GameSlug = PlayRecord["game"];
+export type RecordOf<G extends GameSlug> = Extract<PlayRecord, { game: G }>;
 
 const DB_NAME = "akinroye-games";
 const DB_VERSION = 1;
-const MATCHES = "matches";
+// Named before there was more than one game. Renaming it would mean a
+// migration for nothing, since the store holds any game's records.
+const RECORDS = "matches";
 const PREFS = "prefs";
 
 let dbPromise: Promise<IDBDatabase> | null = null;
@@ -42,8 +79,8 @@ function openDb(): Promise<IDBDatabase> {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (!db.objectStoreNames.contains(MATCHES)) {
-        const store = db.createObjectStore(MATCHES, { keyPath: "id", autoIncrement: true });
+      if (!db.objectStoreNames.contains(RECORDS)) {
+        const store = db.createObjectStore(RECORDS, { keyPath: "id", autoIncrement: true });
         store.createIndex("byGame", ["game", "endedAt"]);
       }
       if (!db.objectStoreNames.contains(PREFS)) {
@@ -79,37 +116,37 @@ function done(tx: IDBTransaction) {
   });
 }
 
-const forGame = (game: string) => IDBKeyRange.bound([game, -Infinity], [game, Infinity]);
+const forGame = (game: GameSlug) => IDBKeyRange.bound([game, -Infinity], [game, Infinity]);
 
-/** Every recorded match for a game, newest first. */
-export async function listMatches(game: string): Promise<MatchRecord[]> {
+/** Every recorded game of one kind, newest first. */
+export async function listRecords<G extends GameSlug>(game: G): Promise<RecordOf<G>[]> {
   const db = await openDb();
-  const tx = db.transaction(MATCHES, "readonly");
-  const matches: MatchRecord[] = [];
-  const request = tx.objectStore(MATCHES).index("byGame").openCursor(forGame(game), "prev");
+  const tx = db.transaction(RECORDS, "readonly");
+  const records: RecordOf<G>[] = [];
+  const request = tx.objectStore(RECORDS).index("byGame").openCursor(forGame(game), "prev");
   request.onsuccess = () => {
     const cursor = request.result;
     if (!cursor) return;
-    matches.push(cursor.value as MatchRecord);
+    records.push(cursor.value as RecordOf<G>);
     cursor.continue();
   };
   await done(tx);
-  return matches;
+  return records;
 }
 
-/** Stores a finished match and returns it with its new id. */
-export async function addMatch(match: MatchRecord): Promise<MatchRecord> {
+/** Stores a finished game and returns it with its new id. */
+export async function addRecord<R extends PlayRecord>(record: R): Promise<R> {
   const db = await openDb();
-  const tx = db.transaction(MATCHES, "readwrite");
-  const request = tx.objectStore(MATCHES).add(match);
+  const tx = db.transaction(RECORDS, "readwrite");
+  const request = tx.objectStore(RECORDS).add(record);
   await done(tx);
-  return { ...match, id: request.result as number };
+  return { ...record, id: request.result as number };
 }
 
-export async function clearMatches(game: string): Promise<void> {
+export async function clearRecords(game: GameSlug): Promise<void> {
   const db = await openDb();
-  const tx = db.transaction(MATCHES, "readwrite");
-  const request = tx.objectStore(MATCHES).index("byGame").openCursor(forGame(game));
+  const tx = db.transaction(RECORDS, "readwrite");
+  const request = tx.objectStore(RECORDS).index("byGame").openCursor(forGame(game));
   request.onsuccess = () => {
     const cursor = request.result;
     if (!cursor) return;
@@ -132,41 +169,4 @@ export async function setPref<T>(key: string, value: T): Promise<void> {
   const tx = db.transaction(PREFS, "readwrite");
   tx.objectStore(PREFS).put({ key, value });
   await done(tx);
-}
-
-export type HistorySummary = {
-  played: number;
-  wins: number;
-  losses: number;
-  /** 0 to 1. */
-  winRate: number;
-  /** Consecutive results matching the latest one. */
-  streak: { result: MatchRecord["result"]; count: number } | null;
-  bestWinStreak: number;
-  longestRally: number;
-};
-
-/** Expects matches newest first, as `listMatches` returns them. */
-export function summarize(matches: MatchRecord[]): HistorySummary {
-  const wins = matches.filter((m) => m.result === "win").length;
-
-  let streakCount = 0;
-  while (streakCount < matches.length && matches[streakCount].result === matches[0].result) streakCount++;
-
-  let bestWinStreak = 0;
-  let run = 0;
-  for (const m of matches) {
-    run = m.result === "win" ? run + 1 : 0;
-    bestWinStreak = Math.max(bestWinStreak, run);
-  }
-
-  return {
-    played: matches.length,
-    wins,
-    losses: matches.length - wins,
-    winRate: matches.length ? wins / matches.length : 0,
-    streak: matches.length ? { result: matches[0].result, count: streakCount } : null,
-    bestWinStreak,
-    longestRally: matches.reduce((best, m) => Math.max(best, m.longestRally), 0),
-  };
 }

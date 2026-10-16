@@ -31,3 +31,10 @@ export function formatDuration(seconds: number) {
   if (s < 60) return `${s}s`;
   return `${Math.floor(s / 60)}m ${String(s % 60).padStart(2, "0")}s`;
 }
+
+/** Race timing: "32.553" under a minute, "1:38.204" over. */
+export function formatLapTime(seconds: number) {
+  if (seconds < 60) return seconds.toFixed(3);
+  const m = Math.floor(seconds / 60);
+  return `${m}:${(seconds - m * 60).toFixed(3).padStart(6, "0")}`;
+}

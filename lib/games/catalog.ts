@@ -1,5 +1,7 @@
+import type { GameSlug } from "@/lib/games/history";
+
 export type Game = {
-  slug: string;
+  slug: GameSlug;
   title: string;
   /** One or two sentences for the games index card. */
   blurb: string;
@@ -17,6 +19,22 @@ export const games: Game[] = [
     tech: "Three.js / WebGL / IndexedDB",
     image: "/games/ping-pong.webp",
   },
+  {
+    slug: "blockfall",
+    title: "Blockfall",
+    blurb:
+      "The falling-block puzzle you already know, built in 3D. Clear lines, chain combos, land T-spins and chase your best score.",
+    tech: "Three.js / WebGL / IndexedDB",
+    image: "/games/blockfall.webp",
+  },
+  {
+    slug: "hot-lap",
+    title: "Hot Lap",
+    blurb:
+      "A time-trial racer on a circuit at dusk. Beat the pace car, and your fastest lap comes back as a ghost to race next visit.",
+    tech: "Three.js / WebGL / IndexedDB",
+    image: "/games/hot-lap.webp",
+  },
 ];
 
-export const gameBySlug = (slug: string) => games.find((g) => g.slug === slug);
+export const gameBySlug = (slug: GameSlug) => games.find((g) => g.slug === slug);
