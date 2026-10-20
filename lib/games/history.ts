@@ -17,6 +17,11 @@ type Base = {
 
 export type PongMatch = Base & {
   game: "ping-pong";
+  /**
+   * "versus" for two people on one device, where "win" means player 1 won.
+   * Missing on matches saved before two-player mode, which were all against the CPU.
+   */
+  mode?: "cpu" | "versus";
   result: "win" | "loss";
   playerScore: number;
   opponentScore: number;
@@ -54,8 +59,48 @@ export type HotLapRun = Base & {
   hits: number;
 };
 
+/** How a turn-based game was played: "local" is friends sharing this screen. */
+type TableBase = Base & {
+  mode: "cpu" | "local" | "online";
+  /**
+   * Your result. In a "local" game nobody in particular is you, so this is
+   * player 1's, and those games are kept out of your record.
+   */
+  result: "win" | "loss";
+  players: number;
+  /** The winner's name as it showed on screen. */
+  winner: string;
+  /** CPU level, when there were CPU seats. */
+  difficulty: string | null;
+  turns: number;
+};
+
+export type WhotRound = TableBase & {
+  game: "whot";
+  /** Cards dealt to each player. */
+  deal: number;
+  /** Cards still in your hand at the end. */
+  cardsLeft: number;
+  /** Cards you picked up, from the market or from a pick two or three. */
+  picked: number;
+  /** "count": the cards ran out and hands were counted. */
+  ending: "out" | "count";
+};
+
+export type LudoMatch = TableBase & {
+  game: "ludo";
+  /** Your colour's name. */
+  color: string;
+  /** Your tokens home at the end. */
+  home: number;
+  captures: number;
+  /** Your tokens sent back to the yard. */
+  lost: number;
+  sixes: number;
+};
+
 /** One finished game. Each game's records carry its own slug from lib/games/catalog.ts. */
-export type PlayRecord = PongMatch | BlockfallRun | HotLapRun;
+export type PlayRecord = PongMatch | BlockfallRun | HotLapRun | WhotRound | LudoMatch;
 export type GameSlug = PlayRecord["game"];
 export type RecordOf<G extends GameSlug> = Extract<PlayRecord, { game: G }>;
 

@@ -897,7 +897,8 @@ html{scrollbar-width:thin;scrollbar-color:var(--primary) rgba(217,157,133,.06);s
   font-size:.74rem;letter-spacing:.08em;color:var(--text-2);text-shadow:0 1px 6px rgba(0,0,0,.85);
 }
 .pong-rally{color:var(--accent);font-variant-numeric:tabular-nums}
-.game-tools{display:flex;gap:8px;pointer-events:auto}
+/* Top right on every screen, menus included, so full screen is always one tap away. */
+.game-tools{position:absolute;top:14px;right:16px;z-index:4;display:flex;gap:8px;pointer-events:auto}
 .game-tool{
   width:38px;height:38px;border-radius:10px;display:grid;place-items:center;cursor:pointer;color:var(--text-2);
   transition:background .2s,color .2s,border-color .2s;
@@ -933,6 +934,26 @@ html{scrollbar-width:thin;scrollbar-color:var(--primary) rgba(217,157,133,.06);s
   border:1px solid var(--border-str);box-shadow:var(--shadow);
 }
 .game-panel .section-eyebrow{margin-bottom:8px}
+.pong-controls b{color:var(--text-2);font-weight:700}
+.pong-controls{margin:2px 0 14px}
+
+/* Full screen: the stage fills the screen and drops its card styling. The
+   WebKit selector gets its own rule, since one unknown selector in a list
+   would void the whole rule. */
+.game-stage:fullscreen{width:100vw;height:100vh;max-height:none;min-height:0;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}
+.game-stage:-webkit-full-screen{width:100vw;height:100vh;max-height:none;min-height:0;aspect-ratio:auto;border:0;border-radius:0;box-shadow:none}
+/* While a game has the screen: no reserved scrollbar gutter (Chrome sizes a
+   full-screen element to the page minus the gutter), and <main>'s stacking
+   context lifted over the site nav for the fill-window fallback below. */
+html:has(.game-stage:fullscreen){scrollbar-gutter:auto}
+html:has(.game-stage:-webkit-full-screen){scrollbar-gutter:auto}
+main:has(.game-stage.fill-window){z-index:400}
+/* No Fullscreen API (iPhone Safari): cover the window instead. */
+.game-stage.fill-window{
+  position:fixed;inset:0;z-index:300;width:auto;height:100dvh;max-height:none;min-height:0;aspect-ratio:auto;
+  border:0;border-radius:0;box-shadow:none;
+}
+.game-stage.fill-window .game-tools{top:calc(10px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right))}
 .game-panel h2{font-family:var(--serif);font-weight:600;font-size:clamp(1.5rem,3vw,2rem);margin-bottom:10px}
 .game-copy{color:var(--text-2);font-size:.92rem;line-height:1.6;margin-bottom:18px}
 .game-loading{color:var(--text-2);font-size:.9rem;letter-spacing:.06em}
@@ -1056,6 +1077,10 @@ kbd{
 @media (max-width:700px){
   .games-page{padding-top:108px}
   .game-stage{aspect-ratio:3/4;border-radius:var(--radius)}
+  .game-tools{top:10px;right:10px}
+  /* A little taller than the other games on phones, for the two-player menu. */
+  .pong-stage{aspect-ratio:2/3}
+  .game-prompt{white-space:normal;width:max-content;max-width:calc(100% - 24px);text-align:center}
   .pong-hud{padding:10px}
   .pong-meta{left:12px;top:66px;transform:none}
   .game-overlay{padding:12px}
@@ -1078,7 +1103,6 @@ kbd{
 }
 
 /* ---------- Blockfall ---------- */
-.blocks-hud{position:absolute;top:14px;right:16px;pointer-events:none}
 .blocks-callout{top:24%;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}
 .blocks-callout span{font-family:var(--sans);font-size:.5em;font-weight:800;color:var(--accent);letter-spacing:.02em}
 .game-link{
@@ -1104,7 +1128,6 @@ kbd{
 
 @media (max-width:700px){
   .blocks-stage{aspect-ratio:7/10}
-  .blocks-hud{top:10px;right:10px}
   .history-row.runs{grid-template-columns:1fr auto;gap:4px 12px}
   .history-row.runs .history-when{grid-column:2;grid-row:1}
   .history-row.runs .history-detail{grid-column:1 / -1}
@@ -1113,7 +1136,6 @@ kbd{
 /* ---------- Hot Lap ---------- */
 .race-stage [hidden]{display:none !important}
 .race-hud{position:absolute;inset:0;pointer-events:none}
-.race-hud .game-tools{position:absolute;top:14px;right:16px;pointer-events:auto}
 .race-panel{background:rgba(20,14,13,.72);border:1px solid var(--border);backdrop-filter:blur(6px);border-radius:12px}
 .race-timing{position:absolute;top:14px;left:16px;padding:10px 16px;min-width:150px}
 .race-lap{font-size:.68rem;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
@@ -1189,7 +1211,6 @@ kbd{
   .race-stage .game-choice{margin-bottom:10px}
   .race-timing{top:10px;left:10px;padding:8px 12px;min-width:0}
   .race-time strong{font-size:1.3rem}
-  .race-hud .game-tools{top:10px;right:10px}
 }
 
 /* Three screenshots on the homepage once there are three games. */
@@ -1197,3 +1218,176 @@ kbd{
 .playground-shots:has(.shot-2) .shot-0{width:72%}
 .playground-shots:has(.shot-2) .shot-1{width:56%;bottom:0}
 .playground-shots:has(.shot-2) .shot-0 .playground-tag{top:14px;bottom:auto}
+
+/* ---------- Turn-based tables (Whot, Ludo): shared HUD ---------- */
+/* These games want the pointer, unlike the action games that hide it mid-play. */
+.whot-stage.playing .game-canvas,.ludo-stage.playing .game-canvas{cursor:default}
+/* Nothing here is dragged, so a swipe can still scroll the page down to your history. */
+.whot-stage.playing,.ludo-stage.playing{touch-action:manipulation}
+.table-hud{position:absolute;inset:0;pointer-events:none}
+.seat-tag{
+  position:absolute;transform:translate(-50%,-50%);display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:6px 12px 7px;border-radius:12px;white-space:nowrap;
+  background:rgba(20,14,13,.74);border:1px solid var(--border);backdrop-filter:blur(6px);
+  transition:border-color .25s,box-shadow .25s,opacity .25s;
+}
+.seat-tag.active{border-color:rgba(217,165,107,.85);box-shadow:0 0 0 3px rgba(217,165,107,.18),0 8px 24px -10px rgba(217,165,107,.6)}
+.seat-tag.offline{opacity:.55}
+.seat-name{font-size:.8rem;font-weight:700;color:var(--text)}
+.seat-count{font-size:.68rem;letter-spacing:.06em;color:var(--muted);font-variant-numeric:tabular-nums}
+.seat-flag{
+  margin-top:3px;padding:1px 8px;border-radius:99px;font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--bg);background:var(--accent);
+}
+.game-prompt.whot-prompt,.game-prompt.ludo-prompt{bottom:auto;top:16px;max-width:calc(100% - 200px);white-space:normal;text-align:center;width:max-content;animation:none}
+.game-prompt.mine{border-color:rgba(217,165,107,.75);animation:prompt-pulse 1.8s ease-in-out infinite}
+.whot-market-count{
+  position:absolute;transform:translate(-50%,0);padding:3px 10px;border-radius:99px;white-space:nowrap;
+  font-size:.68rem;font-weight:700;letter-spacing:.08em;color:var(--text-2);background:rgba(20,14,13,.6);
+}
+.whot-market{
+  position:absolute;right:18px;bottom:calc(30% + 8px);z-index:3;padding:11px 18px;border-radius:12px;cursor:pointer;
+  font:inherit;font-size:.88rem;font-weight:700;color:var(--text);
+  background:rgba(20,14,13,.82);border:1px solid var(--border-str);backdrop-filter:blur(6px);transition:background .2s,border-color .2s;
+}
+.whot-market:hover{background:rgba(163,38,57,.45);border-color:var(--primary-lt)}
+.whot-market.urge{background:linear-gradient(135deg,var(--primary) 0%,var(--primary-dk) 100%);border-color:var(--primary-lt);animation:prompt-pulse 1.8s ease-in-out infinite}
+.whot-market .only-keys{font-weight:600;color:var(--text-2)}
+.whot-tap{
+  position:absolute;left:50%;bottom:calc(30% + 10px);transform:translateX(-50%);pointer-events:none;white-space:nowrap;
+  font-size:.78rem;font-weight:600;color:var(--accent);text-shadow:0 1px 8px rgba(0,0,0,.9);
+}
+.game-flash.whot-flash{display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;top:30%}
+.game-flash.whot-flash span{font-family:var(--sans);font-size:.42em;font-weight:700;color:var(--accent);letter-spacing:.02em}
+.whot-call{
+  position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:5;width:min(520px,calc(100% - 24px));
+  padding:18px 18px 14px;border-radius:var(--radius-lg);text-align:center;
+  background:linear-gradient(160deg,rgba(43,29,26,.96),rgba(26,18,17,.96));border:1px solid var(--border-str);box-shadow:var(--shadow);
+  animation:fade-in .2s ease;
+}
+.whot-call > p{font-family:var(--serif);font-size:1.25rem;font-weight:600;margin-bottom:12px}
+.whot-call > div{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-bottom:10px}
+.whot-call > div button{
+  position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px 10px;border-radius:12px;cursor:pointer;
+  font:inherit;font-size:.74rem;font-weight:700;color:#8E1F2E;background:#FBF4E8;border:2px solid transparent;transition:transform .15s,border-color .15s;
+}
+.whot-call > div button:hover,.whot-call > div button:focus-visible{transform:translateY(-3px);border-color:var(--accent)}
+.whot-call kbd{position:absolute;top:4px;right:4px;font-size:.6rem;padding:0 4px}
+.whot-rules ul{display:grid;gap:8px;margin:6px 0 4px;text-align:left}
+.whot-rules li{display:flex;align-items:baseline;gap:12px;font-size:.9rem;color:var(--text-2)}
+.whot-rules li strong{flex:none;width:30px;font-family:var(--serif);font-size:1.15rem;color:var(--accent);text-align:right}
+.whot-rules li b{color:var(--text)}
+.whot-rules .btn{margin-top:14px}
+.whot-curtain{background:rgba(20,14,13,.94)}
+
+/* ---------- Online: join, lobby, notices ---------- */
+.online-field{display:flex;flex-direction:column;gap:6px;margin:0 auto 14px;max-width:300px;text-align:left}
+.online-field span{font-size:.66rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.online-field input{
+  width:100%;padding:11px 14px;border-radius:10px;font:inherit;font-size:.95rem;color:var(--text);
+  background:rgba(0,0,0,.28);border:1px solid var(--border-str);transition:border-color .2s;
+}
+.online-field input:focus{outline:none;border-color:var(--accent)}
+.online-code-input{text-transform:uppercase;letter-spacing:.3em;font-weight:700;text-align:center}
+.online-code{
+  margin:4px auto 14px;padding:10px 18px;width:max-content;border-radius:12px;
+  font-family:var(--serif);font-size:clamp(1.8rem,5vw,2.4rem);font-weight:700;letter-spacing:.22em;color:var(--accent);
+  background:rgba(0,0,0,.25);border:1px dashed rgba(217,165,107,.45);user-select:all;-webkit-user-select:all;
+}
+.online-share{display:flex;justify-content:center;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.online-seats{display:grid;gap:6px;margin:0 0 16px;padding:0;list-style:none;text-align:left}
+.online-seat{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;font-size:.88rem;
+  background:rgba(255,255,255,.03);border:1px solid var(--border);
+}
+.online-seat.open{border-style:dashed;color:var(--muted)}
+.online-seat.you{border-color:rgba(217,165,107,.45)}
+.online-dot{flex:none;width:10px;height:10px;border-radius:50%;background:var(--muted)}
+.online-seat.host .online-dot,.online-seat.guest .online-dot{background:#5ED08A;box-shadow:0 0 8px rgba(94,208,138,.6)}
+.online-seat.open .online-dot{background:transparent;border:1px solid var(--muted)}
+.online-seat-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.online-seat-name em{font-style:normal;color:var(--muted)}
+.online-seat-tag{font-size:.66rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.online-wait{margin:4px 0 0}
+.online-ellipsis::after{content:'';animation:dots 1.4s steps(4,end) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+.online-spinner{
+  width:34px;height:34px;margin:0 auto 6px;border-radius:50%;
+  border:3px solid rgba(217,165,107,.2);border-top-color:var(--accent);animation:spin .9s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.online-notice{
+  position:absolute;left:50%;top:62px;transform:translateX(-50%);z-index:4;display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;
+  width:max-content;max-width:calc(100% - 24px);padding:8px 16px;border-radius:12px;font-size:.82rem;color:var(--text);text-align:center;
+  background:rgba(110,22,34,.9);border:1px solid rgba(198,59,80,.6);
+}
+.online-notice .game-link{color:var(--accent)}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none;box-shadow:none}
+
+@media (max-width:700px){
+  .whot-stage{aspect-ratio:9/15}
+  .ludo-stage{aspect-ratio:3/4.2}
+  .game-prompt.ludo-prompt{top:58px;max-width:calc(100% - 24px);font-size:.78rem;padding:7px 14px}
+  /* On a phone the instruction sits over your hand, with the market button under it. */
+  .game-prompt.whot-prompt{top:auto;bottom:calc(25% + 62px);max-width:calc(100% - 24px);font-size:.78rem;padding:7px 14px}
+  .whot-market{right:50%;transform:translateX(50%);bottom:calc(25% + 12px)}
+  .seat-tag{padding:4px 9px 5px}
+  .seat-name{font-size:.72rem}
+  .whot-market{padding:9px 16px;font-size:.8rem}
+  .whot-tap{bottom:calc(25% + 104px)}
+  .whot-call > div{gap:5px}
+  .whot-call > div button{font-size:.62rem;padding:10px 2px 8px}
+  .online-notice{top:104px}
+}
+@media (prefers-reduced-motion:reduce){
+  .game-prompt.mine,.whot-market.urge,.online-spinner,.online-ellipsis::after{animation:none}
+}
+
+/* ---------- Ludo ---------- */
+.ludo-player{
+  position:absolute;display:flex;flex-direction:column;gap:5px;padding:8px 12px 9px;border-radius:12px;min-width:110px;
+  background:rgba(20,14,13,.74);border:1px solid var(--border);border-left:4px solid var(--seat);backdrop-filter:blur(6px);
+  transition:border-color .25s,box-shadow .25s,opacity .25s;
+}
+.ludo-player.bl{left:16px;bottom:16px}
+.ludo-player.tl{left:16px;top:16px}
+.ludo-player.tr{right:16px;top:70px}
+.ludo-player.br{right:16px;bottom:16px}
+.ludo-player.active{border-color:var(--seat);box-shadow:0 0 0 3px color-mix(in srgb,var(--seat) 30%,transparent),0 10px 26px -10px var(--seat)}
+.ludo-player.offline{opacity:.5}
+.ludo-player-name{font-size:.8rem;font-weight:700;white-space:nowrap;max-width:140px;overflow:hidden;text-overflow:ellipsis}
+.ludo-player-home{display:flex;gap:5px}
+.ludo-player-home i{width:11px;height:11px;border-radius:50%;border:1.5px solid var(--seat);opacity:.45}
+.ludo-player-home i.out{opacity:1}
+.ludo-player-home i.in{opacity:1;background:var(--seat)}
+.ludo-roll{
+  position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:3;padding:13px 26px;border-radius:14px;cursor:pointer;
+  font:inherit;font-size:.95rem;font-weight:800;color:#fff;
+  background:linear-gradient(135deg,var(--seat) 0%,color-mix(in srgb,var(--seat) 60%,#000) 100%);
+  border:1px solid color-mix(in srgb,var(--seat) 70%,#fff);box-shadow:0 12px 30px -12px var(--seat);
+  animation:prompt-pulse 1.8s ease-in-out infinite;transition:transform .15s;
+}
+.ludo-roll:hover{transform:translateX(-50%) translateY(-2px)}
+.ludo-roll .only-keys{font-weight:600;opacity:.8}
+.ludo-pick{position:absolute;left:50%;bottom:18px;transform:translateX(-50%);z-index:3;display:flex;gap:8px}
+.ludo-pick button{
+  display:flex;align-items:center;gap:8px;padding:10px 16px;border-radius:12px;cursor:pointer;
+  font:inherit;font-size:.86rem;font-weight:700;color:var(--text);
+  background:rgba(20,14,13,.85);border:1px solid var(--seat);transition:background .15s,transform .15s;
+}
+.ludo-pick button:hover,.ludo-pick button.focus{background:color-mix(in srgb,var(--seat) 40%,rgba(20,14,13,.85));transform:translateY(-2px)}
+.ludo-pick kbd{font-size:.64rem;padding:0 5px}
+.ludo-colors span{border-left:4px solid var(--seat)}
+.ludo-colors input:checked + span{background:color-mix(in srgb,var(--seat) 38%,transparent);border-color:var(--seat)}
+
+@media (max-width:700px){
+  /* No room for a panel in each corner on a phone: one strip along the bottom, in turn order. */
+  .ludo-hud{inset:auto 0 0 0;display:flex;justify-content:center;gap:6px;padding:0 8px 10px}
+  .ludo-player,.ludo-player.bl,.ludo-player.tl,.ludo-player.tr,.ludo-player.br{position:static;flex:1 1 0;min-width:0;max-width:96px;padding:6px 8px 7px;gap:4px}
+  .ludo-player-name{font-size:.7rem;max-width:100%}
+  .ludo-player-home i{width:9px;height:9px}
+  .ludo-roll{bottom:64px;padding:11px 20px;font-size:.88rem}
+  .ludo-pick{bottom:64px;flex-wrap:wrap;justify-content:center;width:calc(100% - 24px)}
+  .ludo-pick button{padding:8px 12px;font-size:.8rem}
+}
+@media (prefers-reduced-motion:reduce){.ludo-roll{animation:none}}

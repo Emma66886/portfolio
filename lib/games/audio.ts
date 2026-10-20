@@ -7,6 +7,7 @@
 export function createSynth() {
   let ctx: AudioContext | null = null;
   let master: GainNode | null = null;
+  let noiseBuffer: AudioBuffer | null = null;
   let muted = false;
 
   return {
@@ -51,10 +52,32 @@ export function createSynth() {
       osc.start(t);
       osc.stop(t + length + 0.02);
     },
+    /** A burst of filtered noise: a card sliding, a die rattling. */
+    noise({ gain = 0.08, length = 0.06, delay = 0, freq = 2400, q = 0.9, type = "bandpass" as BiquadFilterType } = {}) {
+      if (!ctx || !master || muted) return;
+      if (!noiseBuffer) {
+        noiseBuffer = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate);
+        const data = noiseBuffer.getChannelData(0);
+        for (let i = 0; i < data.length; i++) data[i] = Math.random() * 2 - 1;
+      }
+      const t = ctx.currentTime + delay;
+      const src = ctx.createBufferSource();
+      src.buffer = noiseBuffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = type;
+      filter.frequency.value = freq;
+      filter.Q.value = q;
+      const amp = ctx.createGain();
+      amp.gain.setValueAtTime(gain, t);
+      amp.gain.exponentialRampToValueAtTime(0.0001, t + length);
+      src.connect(filter).connect(amp).connect(master);
+      src.start(t, Math.random() * 0.5, length + 0.05);
+    },
     dispose() {
       void ctx?.close();
       ctx = null;
       master = null;
+      noiseBuffer = null;
     },
   };
 }

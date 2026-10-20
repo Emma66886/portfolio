@@ -7,7 +7,7 @@ import { profile } from "@/lib/data";
 import { games } from "@/lib/games/catalog";
 
 const description =
-  "Small browser games Emmanuel Akinroye builds in his own time, starting with 3D ping pong in three.js that remembers every match you play.";
+  "Small 3D browser games Emmanuel Akinroye builds in his own time, from ping pong to Whot and Ludo you can play online with friends from a link.";
 
 export const metadata: Metadata = {
   title: `Games | ${profile.name}`,
@@ -29,7 +29,8 @@ export default function GamesPage() {
           <p className="lead">
             Little games I build in my own time. They&apos;re where I try things client work rarely
             calls for, like real-time 3D in the browser. Everything runs on your device, and your
-            results are kept there too, so they&apos;re waiting when you come back.
+            results are kept there too, so they&apos;re waiting when you come back. Whot and Ludo
+            also play online: send a friend a link and your browsers connect directly.
           </p>
         </header>
 

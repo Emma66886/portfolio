@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { PauseIcon, SoundIcon } from "@/components/games/GameIcons";
+import { FullscreenButton, PauseIcon, SoundIcon } from "@/components/games/GameIcons";
 import {
   createAutoplayer,
   createGame,
@@ -13,8 +13,10 @@ import {
 import type { BlockfallScene } from "@/lib/games/blockfall/scene";
 import { createSound } from "@/lib/games/blockfall/sound";
 import { formatDuration, timeAgo } from "@/lib/games/format";
+import { anyTapped, BUTTON, createGamepads } from "@/lib/games/gamepad";
 import { getPref, setPref, type BlockfallRun } from "@/lib/games/history";
 import { formatScore, summarizeBlockfall } from "@/lib/games/stats";
+import { useFullscreen } from "@/lib/games/useFullscreen";
 
 const GAME = "blockfall";
 const SETTINGS_KEY = `${GAME}:settings`;
@@ -81,6 +83,7 @@ export default function BlockfallGame({
   const [result, setResult] = useState<Result | null>(null);
   const [paused, setPaused] = useState({ score: 0, level: 1 });
   const [announce, setAnnounce] = useState("");
+  const fs = useFullscreen(stageRef);
 
   // The render loop lives outside React, so it reads these refs rather than
   // state. React only hears about the moments the overlays need to change.
@@ -90,15 +93,18 @@ export default function BlockfallGame({
   const demoRef = useRef<{ game: Game; ai: ReturnType<typeof createAutoplayer> } | null>(null);
   const sceneRef = useRef<BlockfallScene | null>(null);
   const soundRef = useRef<ReturnType<typeof createSound> | null>(null);
+  /** Directions held on the keyboard; the loop adds any gamepad on top. */
   const held = useRef({ left: false, right: false, down: false });
   const actions = useRef<Action[]>([]);
   const bestRef = useRef(0);
   const onGameEndRef = useRef(onGameEnd);
+  const toggleFullscreen = useRef(fs.toggle);
   const kickRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     onGameEndRef.current = onGameEnd;
-  }, [onGameEnd]);
+    toggleFullscreen.current = fs.toggle;
+  }, [onGameEnd, fs.toggle]);
 
   useEffect(() => {
     bestRef.current = summarizeBlockfall(runs).best?.score ?? 0;
@@ -238,6 +244,7 @@ export default function BlockfallGame({
     let visible = true;
     const cleanups: (() => void)[] = [];
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gamepads = createGamepads();
     soundRef.current = createSound();
     soundRef.current.setMuted(settingsRef.current.muted);
 
@@ -251,17 +258,35 @@ export default function BlockfallGame({
       if (!scene || disposed) return;
       const dt = last ? Math.min((now - last) / 1000, 0.1) : STEP;
       last = now;
+      const pads = gamepads.poll();
+
+      // Pads: A or Start begins a game from the menus, Start pauses and resumes.
+      if ((screenRef.current === "menu" || screenRef.current === "over") && anyTapped(pads, BUTTON.A, BUTTON.START)) startGame();
+      else if (screenRef.current === "playing" && anyTapped(pads, BUTTON.START)) pause();
+      else if (screenRef.current === "paused" && anyTapped(pads, BUTTON.START)) resume();
       const current = screenRef.current;
 
       let shown: Game | null = null;
       if (current === "playing" && gameRef.current) {
         const g = gameRef.current;
+        // Pads: stick or d-pad to move and soft-drop, up to hard-drop, A to
+        // turn clockwise, B or X the other way, Y or a shoulder to hold.
+        const both = { ...held.current };
+        for (const pad of pads) {
+          both.left ||= pad.x < -0.5;
+          both.right ||= pad.x > 0.5;
+          both.down ||= pad.y > 0.5;
+          if (pad.tapped(BUTTON.A)) actions.current.push("rotateCW");
+          if (pad.tapped(BUTTON.B) || pad.tapped(BUTTON.X)) actions.current.push("rotateCCW");
+          if (pad.tapped(BUTTON.Y) || pad.tapped(BUTTON.LB) || pad.tapped(BUTTON.RB)) actions.current.push("hold");
+          if (pad.tapped(BUTTON.UP)) actions.current.push("hardDrop");
+        }
         acc += dt;
         while (acc >= STEP) {
           acc -= STEP;
           const queued = actions.current;
           actions.current = [];
-          const events = step(g, STEP, held.current, queued);
+          const events = step(g, STEP, both, queued);
           if (events.length) {
             scene.onEvents(events, g);
             handleEvents(g, events);
@@ -292,8 +317,11 @@ export default function BlockfallGame({
 
       if (shown) scene.render(shown, current === "paused" ? 0 : dt);
 
-      const animating = current === "playing" || current === "menu" || current === "over";
-      if (animating && visible && !document.hidden) frame = requestAnimationFrame(tick);
+      // While paused the loop only keeps going to watch for a pad's Start button.
+      const state = screenRef.current;
+      const animating = state === "playing" || state === "menu" || state === "over" || (state === "paused" && pads.length > 0);
+      // A screen change inside this tick may already have queued the next one.
+      if (animating && visible && !document.hidden) frame ||= requestAnimationFrame(tick);
       else last = 0;
     };
 
@@ -304,6 +332,8 @@ export default function BlockfallGame({
       }
     };
     kickRef.current = kick;
+    window.addEventListener("gamepadconnected", kick);
+    cleanups.push(() => window.removeEventListener("gamepadconnected", kick));
 
     import("@/lib/games/blockfall/scene").then(({ createBlockfallScene }) => {
       if (disposed) return;
@@ -332,7 +362,7 @@ export default function BlockfallGame({
     const seen = new IntersectionObserver(
       ([entry]) => {
         visible = entry.intersectionRatio > 0.35;
-        if (!visible) pause();
+        if (!visible && !document.fullscreenElement) pause();
         if (visible) kick();
       },
       { threshold: [0, 0.35, 0.6] }
@@ -362,6 +392,11 @@ export default function BlockfallGame({
         return;
       }
       if (!down) return;
+      if (k === "f" && !e.repeat) {
+        e.preventDefault();
+        toggleFullscreen.current();
+        return;
+      }
       if ((k === "p" || k === "Escape") && (playing || screenRef.current === "paused")) {
         e.preventDefault();
         if (playing) pause();
@@ -472,7 +507,7 @@ export default function BlockfallGame({
       soundRef.current = null;
       kickRef.current = () => {};
     };
-  }, [go, handleEvents, pause, resume]);
+  }, [go, handleEvents, pause, resume, startGame]);
 
   const quitToMenu = () => {
     gameRef.current = null;
@@ -483,12 +518,15 @@ export default function BlockfallGame({
 
   return (
     <div className="game">
-      <div ref={stageRef} className={`game-stage blocks-stage${screen === "playing" ? " playing" : ""}`}>
+      <div
+        ref={stageRef}
+        className={`game-stage blocks-stage${screen === "playing" ? " playing" : ""}${fs.filled ? " fill-window" : ""}`}
+      >
         <canvas ref={canvasRef} className="game-canvas" aria-label="3D falling-block puzzle board" role="img" />
 
-        {(screen === "playing" || screen === "paused") && (
-          <div className="blocks-hud">
-            <div className="game-tools">
+        <div className="game-tools">
+          {(screen === "playing" || screen === "paused") && (
+            <>
               <button
                 type="button"
                 className="game-tool"
@@ -513,9 +551,10 @@ export default function BlockfallGame({
               >
                 <PauseIcon />
               </button>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+          <FullscreenButton active={fs.fullscreen} onToggle={fs.toggle} />
+        </div>
 
         {screen === "playing" && toast && (
           <p key={toast.key} className="game-flash blocks-callout">
@@ -569,7 +608,8 @@ export default function BlockfallGame({
                 Start game
               </button>
               <p className="game-keys only-keys">
-                Arrows to move and turn, Space to drop, C to hold. Z turns the other way.
+                Arrows to move and turn, Space to drop, C to hold. Z turns the other way. Gamepads work
+                too.
               </p>
               <p className="game-keys only-touch">
                 Drag to move, tap to turn, flick down to drop, swipe up to hold.
@@ -668,6 +708,10 @@ export default function BlockfallGame({
         <span>
           <kbd>P</kbd> pause
         </span>
+        <span>
+          <kbd>F</kbd> full screen
+        </span>
+        <span>Gamepads: d-pad to move, A and B to turn, up to drop, Y to hold</span>
       </p>
     </div>
   );

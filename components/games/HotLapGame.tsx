@@ -1,8 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { PauseIcon, SoundIcon } from "@/components/games/GameIcons";
+import { FullscreenButton, PauseIcon, SoundIcon } from "@/components/games/GameIcons";
 import { formatLapTime, timeAgo } from "@/lib/games/format";
+import { anyTapped, BUTTON, createGamepads, type Pad } from "@/lib/games/gamepad";
 import { getPref, setPref, type HotLapRun } from "@/lib/games/history";
 import {
   autopilot,
@@ -25,6 +26,7 @@ import {
 import type { HotLapScene } from "@/lib/games/hotlap/scene";
 import { createSound } from "@/lib/games/hotlap/sound";
 import { summarizeHotLap } from "@/lib/games/stats";
+import { useFullscreen } from "@/lib/games/useFullscreen";
 
 const GAME = "hot-lap";
 const SETTINGS_KEY = `${GAME}:settings`;
@@ -99,9 +101,12 @@ export default function HotLapGame({
   const touch = useRef({ gas: false, brake: false, left: false, right: false });
   const onRaceEndRef = useRef(onRaceEnd);
   const kickRef = useRef<() => void>(() => {});
+  const fs = useFullscreen(stageRef, { landscape: true });
+  const toggleFullscreen = useRef(fs.toggle);
 
   useEffect(() => {
     onRaceEndRef.current = onRaceEnd;
+    toggleFullscreen.current = fs.toggle;
   }, [onRaceEnd]);
 
   const go = useCallback((next: Screen) => {
@@ -298,6 +303,7 @@ export default function HotLapGame({
     let visible = true;
     const cleanups: (() => void)[] = [];
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const gamepads = createGamepads();
     soundRef.current = createSound();
     soundRef.current.setMuted(settingsRef.current.muted);
 
@@ -307,21 +313,20 @@ export default function HotLapGame({
       demoRef.current = r;
     };
 
-    const readControls = (): Controls => {
+    const readControls = (pads: Pad[]): Controls => {
       const k = keys.current;
       const t = touch.current;
       let throttle = k.up || t.gas ? 1 : 0;
       let brake = k.down || t.brake ? 1 : 0;
       let steer = (k.right || t.right ? 1 : 0) - (k.left || t.left ? 1 : 0);
       let handbrake = k.handbrake;
-      // A gamepad, if there is one: left stick steers, triggers for pedals.
-      const pad = navigator.getGamepads?.().find((p) => p?.connected);
-      if (pad) {
-        const x = pad.axes[0] ?? 0;
-        if (Math.abs(x) > 0.12) steer = Math.max(-1, Math.min(1, steer + x));
-        throttle = Math.max(throttle, pad.buttons[7]?.value ?? 0, pad.buttons[0]?.pressed ? 1 : 0);
-        brake = Math.max(brake, pad.buttons[6]?.value ?? 0);
-        handbrake ||= !!pad.buttons[1]?.pressed;
+      // Gamepads: stick or d-pad steers, the triggers are analogue pedals,
+      // with A and X as on/off ones for pads without triggers, B the handbrake.
+      for (const pad of pads) {
+        steer = Math.max(-1, Math.min(1, steer + pad.x));
+        throttle = Math.max(throttle, pad.value(BUTTON.RT), pad.pressed(BUTTON.A) ? 1 : 0);
+        brake = Math.max(brake, pad.value(BUTTON.LT), pad.pressed(BUTTON.X) ? 1 : 0);
+        handbrake ||= pad.pressed(BUTTON.B);
       }
       return { throttle, brake, steer, handbrake };
     };
@@ -356,6 +361,16 @@ export default function HotLapGame({
       if (!scene || disposed) return;
       const dt = last ? Math.min((now - last) / 1000, 0.1) : STEP;
       last = now;
+      const pads = gamepads.poll();
+
+      // Pads: A or Start begins a race from the menus, Start pauses and
+      // resumes, Y puts the car back on the track.
+      if ((screenRef.current === "menu" || screenRef.current === "over") && anyTapped(pads, BUTTON.A, BUTTON.START)) startRace();
+      else if (screenRef.current === "playing" && anyTapped(pads, BUTTON.START)) pause();
+      else if (screenRef.current === "paused" && anyTapped(pads, BUTTON.START)) resume();
+      if (screenRef.current === "playing" && raceRef.current?.phase === "racing" && anyTapped(pads, BUTTON.Y)) {
+        respawn(raceRef.current);
+      }
       const current = screenRef.current;
       let shown: Race | null = null;
 
@@ -364,7 +379,7 @@ export default function HotLapGame({
         acc += dt;
         while (acc >= STEP) {
           acc -= STEP;
-          let c = current === "playing" ? readControls() : NO_CONTROLS;
+          let c = current === "playing" ? readControls(pads) : NO_CONTROLS;
           if (r.phase === "finished") {
             // After the flag, the car rolls on by itself at a gentle pace.
             const auto = autopilot(r);
@@ -414,8 +429,11 @@ export default function HotLapGame({
         scene.render(shown, pose, current === "paused" ? 0 : dt);
       }
 
-      const animating = current === "playing" || current === "menu" || current === "over";
-      if (animating && visible && !document.hidden) frame = requestAnimationFrame(tick);
+      // While paused the loop only keeps going to watch for a pad's Start button.
+      const state = screenRef.current;
+      const animating = state === "playing" || state === "menu" || state === "over" || (state === "paused" && pads.length > 0);
+      // A screen change inside this tick may already have queued the next one.
+      if (animating && visible && !document.hidden) frame ||= requestAnimationFrame(tick);
       else last = 0;
     };
 
@@ -426,6 +444,8 @@ export default function HotLapGame({
       }
     };
     kickRef.current = kick;
+    window.addEventListener("gamepadconnected", kick);
+    cleanups.push(() => window.removeEventListener("gamepadconnected", kick));
 
     import("@/lib/games/hotlap/scene").then(({ createHotLapScene }) => {
       if (disposed) return;
@@ -459,8 +479,8 @@ export default function HotLapGame({
     const seen = new IntersectionObserver(
       ([entry]) => {
         visible = entry.intersectionRatio > 0.35;
-        if (!visible) pause();
-        else kick();
+        if (!visible && !document.fullscreenElement) pause();
+        else if (visible) kick();
       },
       { threshold: [0, 0.35, 0.6] }
     );
@@ -496,7 +516,10 @@ export default function HotLapGame({
         return;
       }
       if (!down) return;
-      if ((k === "p" || k === "Escape") && (playing || screenRef.current === "paused")) {
+      if (k === "f" && !e.repeat) {
+        e.preventDefault();
+        toggleFullscreen.current();
+      } else if ((k === "p" || k === "Escape") && (playing || screenRef.current === "paused")) {
         e.preventDefault();
         if (playing) pause();
         else resume();
@@ -527,7 +550,7 @@ export default function HotLapGame({
       soundRef.current = null;
       kickRef.current = () => {};
     };
-  }, [go, handleEvents, pause, resume]);
+  }, [go, handleEvents, pause, resume, startRace]);
 
   /** Hold-to-press handlers for the on-screen pedals and steering. */
   const pad = (control: keyof typeof touch.current) => ({
@@ -558,7 +581,10 @@ export default function HotLapGame({
 
   return (
     <div className="game">
-      <div ref={stageRef} className={`game-stage race-stage${screen === "playing" ? " playing" : ""}`}>
+      <div
+        ref={stageRef}
+        className={`game-stage race-stage${screen === "playing" ? " playing" : ""}${fs.filled ? " fill-window" : ""}`}
+      >
         <canvas ref={canvasRef} className="game-canvas" aria-label="3D race track" role="img" />
 
         {inRace && (
@@ -575,7 +601,24 @@ export default function HotLapGame({
             </p>
           </div>
           <p ref={hud.gap} className="race-gap" hidden />
-          <div className="game-tools">
+          <svg className="race-map" viewBox={map.viewBox} aria-hidden="true">
+            <path d={map.d} className="race-map-track" />
+            <circle cx={map.start.x} cy={map.start.z} r="9" className="race-map-start" />
+            <circle ref={hud.ghostDot} r="13" className="race-map-ghost" visibility="hidden" />
+            <circle ref={hud.dot} r="14" className="race-map-car" />
+          </svg>
+          <div className="race-panel race-speed">
+            <strong ref={hud.speed}>0</strong>
+            <span>
+              km/h · gear <b ref={hud.gear}>1</b>
+            </span>
+          </div>
+        </div>
+        )}
+
+        <div className="game-tools">
+          {inRace && (
+            <>
             <button
               type="button"
               className="game-tool"
@@ -611,21 +654,10 @@ export default function HotLapGame({
             >
               <PauseIcon />
             </button>
-          </div>
-          <svg className="race-map" viewBox={map.viewBox} aria-hidden="true">
-            <path d={map.d} className="race-map-track" />
-            <circle cx={map.start.x} cy={map.start.z} r="9" className="race-map-start" />
-            <circle ref={hud.ghostDot} r="13" className="race-map-ghost" visibility="hidden" />
-            <circle ref={hud.dot} r="14" className="race-map-car" />
-          </svg>
-          <div className="race-panel race-speed">
-            <strong ref={hud.speed}>0</strong>
-            <span>
-              km/h · gear <b ref={hud.gear}>1</b>
-            </span>
-          </div>
+            </>
+          )}
+          <FullscreenButton active={fs.fullscreen} onToggle={fs.toggle} />
         </div>
-        )}
 
         {screen === "playing" && (
           <div className="race-touch" aria-hidden="true">
@@ -733,7 +765,8 @@ export default function HotLapGame({
                 Start race
               </button>
               <p className="game-keys only-keys">
-                Arrows or WASD to drive, Space for the handbrake, R to get back on the track.
+                Arrows or WASD to drive, Space for the handbrake, R to get back on the track. Gamepads
+                work too.
               </p>
               <p className="game-keys only-touch">Steer and pedals are on screen once you start.</p>
             </div>
@@ -842,7 +875,10 @@ export default function HotLapGame({
         <span>
           <kbd>P</kbd> pause
         </span>
-        <span>Gamepads work too</span>
+        <span>
+          <kbd>F</kbd> full screen
+        </span>
+        <span>Gamepads: triggers for pedals, B handbrake, Y back on track</span>
       </p>
     </div>
   );

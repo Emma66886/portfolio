@@ -35,6 +35,22 @@ export const games: Game[] = [
     tech: "Three.js / WebGL / IndexedDB",
     image: "/games/hot-lap.webp",
   },
+  {
+    slug: "whot",
+    title: "Whot",
+    blurb:
+      "The Nigerian card game on a 3D table. Play the CPU, pass one phone round your friends, or send someone a link and play online.",
+    tech: "Three.js / WebRTC / IndexedDB",
+    image: "/games/whot.webp",
+  },
+  {
+    slug: "ludo",
+    title: "Ludo",
+    blurb:
+      "Four colours, one die, no mercy. Up to four players against the CPU, round one screen, or online from a link you send.",
+    tech: "Three.js / WebRTC / IndexedDB",
+    image: "/games/ludo.webp",
+  },
 ];
 
 export const gameBySlug = (slug: GameSlug) => games.find((g) => g.slug === slug);

@@ -2,7 +2,7 @@
  * Ping pong rules and ball flight, with no rendering in here: the three.js
  * scene reads this state each frame and draws it. Units are metres on a
  * regulation table, with the table top at y = 0, the player at +z and the
- * CPU at -z.
+ * CPU at -z. In a two-player match the "cpu" side is the second player.
  *
  * The ball moves in a straight line across the table (x, z). Its height is
  * derived from z along a planned flight: from the paddle, down to a bounce on
@@ -71,6 +71,8 @@ type Paddle = { x: number; vx: number };
 
 export type Match = {
   difficulty: Difficulty;
+  /** Two people on one device: the far paddle takes input instead of thinking for itself. */
+  versus: boolean;
   /** Points needed to win, by a margin of two. */
   target: number;
   phase: Phase;
@@ -109,6 +111,9 @@ export type PongInput = {
   x: number;
   /** True on the frame the player asks to serve. */
   serve: boolean;
+  /** The second player's paddle and serve, in a two-player match. */
+  x2?: number;
+  serve2?: boolean;
 };
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(Math.max(v, lo), hi);
@@ -116,9 +121,10 @@ const rand = (lo: number, hi: number) => lo + Math.random() * (hi - lo);
 const other = (side: Side): Side => (side === "player" ? "cpu" : "player");
 const paddleZ = (side: Side) => (side === "player" ? PLAYER_Z : CPU_Z);
 
-export function createMatch(difficulty: Difficulty, target: number): Match {
+export function createMatch(difficulty: Difficulty, target: number, versus = false): Match {
   const m: Match = {
     difficulty,
+    versus,
     target,
     phase: "serve",
     score: { player: 0, cpu: 0 },
@@ -212,7 +218,7 @@ function launch(m: Match, from: Side, targetX: number, speed: number, serve: boo
   // The CPU commits to a read of each shot coming its way. Usually close,
   // occasionally far enough off that it misses, and more often on fast shots
   // that drag it away from where it is standing.
-  if (from === "player") {
+  if (from === "player" && !m.versus) {
     const ai = DIFFICULTIES[m.difficulty];
     const pressure = speed / MAX_SPEED;
     const arriveX = ball.x + ball.vx * ((2 * Math.abs(z0)) / speed);
@@ -228,10 +234,10 @@ function serve(m: Match, events: PongEvent[]) {
   const ai = DIFFICULTIES[m.difficulty];
   const speed = BASE_SPEED * ai.pace * 0.85;
   const hw = TABLE.halfWidth;
-  // Players aim a serve by moving as they hit it.
+  // People aim a serve by moving as they hit it.
   const targetX =
-    m.server === "player"
-      ? clamp(m.player.vx * 0.15 + rand(-0.25, 0.25), -hw * 0.8, hw * 0.8)
+    m.server === "player" || m.versus
+      ? clamp(m[m.server].vx * 0.15 + rand(-0.25, 0.25), -hw * 0.8, hw * 0.8)
       : rand(-0.6, 0.6) * hw;
   m.ball.x = m[m.server].x;
   m.rally = 0;
@@ -247,7 +253,7 @@ function returnShot(m: Match, side: Side, contactX: number, events: PongEvent[])
   let targetX: number;
   let boost = 0;
 
-  if (side === "player") {
+  if (side === "player" || m.versus) {
     // Where the ball meets the blade sets the angle, and a moving paddle
     // adds a flick and some pace on top.
     const offset = clamp((contactX - paddle.x) / REACH, -1, 1);
@@ -312,6 +318,18 @@ function moveCpu(m: Match, dt: number) {
   m.cpu.vx = (m.cpu.x - prev) / dt;
 }
 
+/**
+ * A person's paddle: a short ease toward where they want it rather than a
+ * hard follow, so it never teleports through the ball when a pointer jumps.
+ */
+function follow(paddle: Paddle, x: number, dt: number) {
+  const prev = paddle.x;
+  const want = clamp(x, -PADDLE_RANGE, PADDLE_RANGE);
+  paddle.x += (want - prev) * (1 - Math.exp(-dt * 28));
+  const vx = (paddle.x - prev) / dt;
+  paddle.vx += (vx - paddle.vx) * (1 - Math.exp(-dt * 20));
+}
+
 /** Advances the match by `dt` seconds and reports what happened. */
 export function step(m: Match, dt: number, input: PongInput): PongEvent[] {
   const events: PongEvent[] = [];
@@ -320,20 +338,15 @@ export function step(m: Match, dt: number, input: PongInput): PongEvent[] {
   m.time += dt;
   m.sinceHit += dt;
 
-  // A short ease rather than a hard follow, so the paddle never teleports
-  // through the ball when the pointer jumps.
-  const prev = m.player.x;
-  const want = clamp(input.x, -PADDLE_RANGE, PADDLE_RANGE);
-  m.player.x += (want - prev) * (1 - Math.exp(-dt * 28));
-  const vx = (m.player.x - prev) / dt;
-  m.player.vx += (vx - m.player.vx) * (1 - Math.exp(-dt * 20));
-
-  moveCpu(m, dt);
+  follow(m.player, input.x, dt);
+  if (m.versus) follow(m.cpu, input.x2 ?? 0, dt);
+  else moveCpu(m, dt);
 
   if (m.phase === "serve") {
     holdBall(m);
     m.timer -= dt;
-    if (m.timer <= 0 && (m.server === "cpu" || input.serve)) serve(m, events);
+    const asked = m.server === "player" ? input.serve : !m.versus || !!input.serve2;
+    if (m.timer <= 0 && asked) serve(m, events);
     return events;
   }
 
@@ -375,7 +388,7 @@ export function step(m: Match, dt: number, input: PongInput): PongEvent[] {
     } else {
       m.server = serverAfter(m, m.score.player + m.score.cpu);
       m.phase = "serve";
-      m.timer = m.server === "cpu" ? 0.9 : 0.25;
+      m.timer = m.server === "cpu" && !m.versus ? 0.9 : 0.25;
       holdBall(m);
       events.push({ type: "ready", server: m.server });
     }

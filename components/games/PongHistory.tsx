@@ -4,7 +4,7 @@ import { useState } from "react";
 import HistoryPanel from "@/components/games/HistoryPanel";
 import { formatDuration, fullDate, timeAgo } from "@/lib/games/format";
 import type { PongMatch } from "@/lib/games/history";
-import { summarizePong } from "@/lib/games/stats";
+import { isVersus, summarizePong } from "@/lib/games/stats";
 
 const SHOWN = 8;
 const LEVELS: Record<string, string> = { easy: "Easy", normal: "Normal", hard: "Hard" };
@@ -33,7 +33,7 @@ export default function PongHistory({
       <ul className="history-stats">
         <li>
           <strong>{stats.played}</strong>
-          <span>Played</span>
+          <span>Vs CPU</span>
         </li>
         <li>
           <strong>
@@ -53,6 +53,12 @@ export default function PongHistory({
           <strong>{stats.longestRally}</strong>
           <span>Longest rally</span>
         </li>
+        {stats.twoPlayer > 0 && (
+          <li>
+            <strong>{stats.twoPlayer}</strong>
+            <span>Two-player</span>
+          </li>
+        )}
       </ul>
       {stats.streak && stats.streak.count > 1 && (
         <p className="history-streak">
@@ -63,7 +69,26 @@ export default function PongHistory({
       )}
 
       <ol className="history-list">
-        {list.map((m) => (
+        {list.map((m) =>
+          isVersus(m) ? (
+            <li key={m.id} className="history-row versus">
+              <span className="history-badge" aria-label="Two players">
+                2P
+              </span>
+              <span className="history-score">
+                {m.playerScore}-{m.opponentScore}
+              </span>
+              <span className="history-detail">
+                {m.result === "win" ? "Player 1" : "Player 2"} won · first to {m.target}
+              </span>
+              <span className="history-detail">
+                Rally {m.longestRally} · {formatDuration(m.duration)}
+              </span>
+              <time className="history-when" dateTime={new Date(m.endedAt).toISOString()} title={fullDate(m.endedAt)}>
+                {timeAgo(m.endedAt)}
+              </time>
+            </li>
+          ) : (
           <li key={m.id} className={`history-row ${m.result}`}>
             <span className="history-badge" aria-label={m.result === "win" ? "Won" : "Lost"}>
               {m.result === "win" ? "W" : "L"}
@@ -81,7 +106,8 @@ export default function PongHistory({
               {timeAgo(m.endedAt)}
             </time>
           </li>
-        ))}
+          )
+        )}
       </ol>
       {matches.length > SHOWN && (
         <button type="button" className="history-more" onClick={() => setShowAll((v) => !v)}>
