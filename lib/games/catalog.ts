@@ -47,7 +47,7 @@ export const games: Game[] = [
     slug: "ludo",
     title: "Ludo",
     blurb:
-      "Four colours, one die, no mercy. Up to four players against the CPU, round one screen, or online from a link you send.",
+      "Two dice and Naija rules: catch someone and your token goes home. Two houses each one on one, against the CPU, round one screen, or online.",
     tech: "Three.js / WebRTC / IndexedDB",
     image: "/games/ludo.webp",
   },

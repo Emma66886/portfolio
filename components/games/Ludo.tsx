@@ -32,7 +32,7 @@ export default function Ludo() {
               : `${stats.streak.count} losses in a row. The die owes you one.`
             : null
         }
-        detail={(r) => `${r.color} · ${r.home}/4 home · ${r.captures} ${r.captures === 1 ? "capture" : "captures"} · ${formatDuration(r.duration)}`}
+        detail={(r) => `${r.color} · ${r.home}/${r.pieces} home · ${r.captures} ${r.captures === 1 ? "capture" : "captures"} · ${formatDuration(r.duration)}`}
       />
     </>
   );

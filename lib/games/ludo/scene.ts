@@ -25,7 +25,7 @@ const CELL = TEX / N;
 /** How high the board's printed surface sits. */
 const TOP = 0.2;
 const DIE = 0.8;
-/** The middle of red's yard; the die is thrown from the roller's own yard. */
+/** The middle of red's house; the dice are thrown from the roller's side. */
 const YARD_CENTRE: Cell = [2.5, 2.5];
 
 const toLocal = ([r, c]: Cell, y = TOP) => new THREE.Vector3(c - 7, y, r - 7);
@@ -247,20 +247,29 @@ function pawnGeometry() {
 
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
 
+/** One leg of a token's journey: hops between points, played in order with the token's other legs. */
 type Hop = { points: THREE.Vector3[]; start: number; hop: number; arc: number; spin: boolean };
 type Token = {
   group: THREE.Group;
   pawn: THREE.Mesh;
   hit: THREE.Mesh;
   ring: THREE.Mesh;
-  seat: number;
+  color: number;
   index: number;
   progress: number;
-  hop: Hop | null;
+  hops: Hop[];
   bob: number;
 };
+type Die = {
+  mesh: THREE.Mesh;
+  mats: THREE.MeshStandardMaterial[];
+  rest: THREE.Vector3;
+  roll: { from: THREE.Vector3; axis: THREE.Vector3; spins: number; end: THREE.Quaternion; start: number; dur: number } | null;
+  dim: number;
+};
 
-export type LudoHit = { kind: "token"; token: number } | { kind: "die" } | null;
+export type TokenRef = { color: number; token: number };
+export type LudoHit = { kind: "token"; color: number; token: number } | { kind: "die"; die: number } | null;
 export type LudoScene = ReturnType<typeof createLudoScene>;
 
 export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMotion: boolean }) {
@@ -331,14 +340,14 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
 
   // ---- Highlights ----
   const ringGeo = keep(new THREE.RingGeometry(0.38, 0.5, 40));
-  const makeRing = (color: string) => {
+  const makeRing = (color: string, parent: THREE.Object3D = board) => {
     const ring = new THREE.Mesh(
       ringGeo,
       keep(new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }))
     );
     ring.rotation.x = -Math.PI / 2;
     ring.visible = false;
-    board.add(ring);
+    parent.add(ring);
     return ring;
   };
   const destination = makeRing(COLORS.gold);
@@ -352,16 +361,17 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
     keep(new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.28, clearcoat: 0.7, clearcoatRoughness: 0.18, emissive: c, emissiveIntensity: 0 }))
   );
   let tokens: Token[] = [];
-  let colors: number[] = [];
+  /** The houses in this game. */
+  let inPlay: number[] = [];
 
-  function buildTokens(seatColors: number[]) {
+  function buildTokens(houses: number[]) {
     for (const t of tokens) {
       board.remove(t.group, t.ring);
       (t.pawn.material as THREE.Material).dispose();
     }
-    colors = seatColors;
+    inPlay = houses;
     tokens = [];
-    seatColors.forEach((color, seat) => {
+    for (const color of houses) {
       for (let index = 0; index < TOKENS; index++) {
         const group = new THREE.Group();
         // Each pawn gets its own material so it can glow on its own.
@@ -372,16 +382,16 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
         hit.position.y = 0.45;
         group.add(pawn, hit);
         board.add(group);
-        tokens.push({ group, pawn, hit, ring: makeRing(TOKEN_COLORS[color]), seat, index, progress: YARD, hop: null, bob: 0 });
+        tokens.push({ group, pawn, hit, ring: makeRing(TOKEN_COLORS[color]), color, index, progress: YARD, hops: [], bob: 0 });
       }
-    });
+    }
   }
 
   /** Resting spot for every token, nudging apart any that share a square. */
   function layout() {
     const spots = new Map<string, Token[]>();
     for (const t of tokens) {
-      const [r, c] = cellFor(colors[t.seat], t.progress, t.index);
+      const [r, c] = cellFor(t.color, t.progress, t.index);
       const key = `${r.toFixed(2)},${c.toFixed(2)}`;
       spots.set(key, [...(spots.get(key) ?? []), t]);
     }
@@ -389,7 +399,7 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
     for (const group of spots.values()) {
       const n = group.length;
       group.forEach((t, i) => {
-        const pos = toLocal(cellFor(colors[t.seat], t.progress, t.index));
+        const pos = toLocal(cellFor(t.color, t.progress, t.index));
         if (n > 1) {
           const a = (i / n) * Math.PI * 2 + Math.PI / 4;
           pos.x += Math.cos(a) * 0.2;
@@ -403,18 +413,26 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
   }
   let rest = layout();
 
-  // ---- Die ----
-  const dieMats = FACE_VALUES.map((v) => keep(new THREE.MeshStandardMaterial({ map: keep(dieFace(v)), roughness: 0.35 })));
-  const die = new THREE.Mesh(keep(new RoundedBoxGeometry(DIE, DIE, DIE, 4, 0.11)), dieMats);
-  die.castShadow = true;
-  const dieRest = new THREE.Vector3(0, TOP + DIE / 2, 0);
-  die.position.copy(dieRest);
-  die.quaternion.copy(FACE_UP[6]);
-  board.add(die);
-  const dieGlow = makeRing(COLORS.gold);
-  dieGlow.position.set(0, TOP + 0.01, 0);
-  dieGlow.scale.setScalar(1.25);
-  let dieRoll: { from: THREE.Vector3; spinAxis: THREE.Vector3; spins: number; end: THREE.Quaternion; start: number; dur: number } | null = null;
+  // ---- Dice: two, side by side across the middle, the same way round whichever way the board faces ----
+  const faceTextures = FACE_VALUES.map((v) => keep(dieFace(v)));
+  const dieGeo = keep(new RoundedBoxGeometry(DIE, DIE, DIE, 4, 0.11));
+  const dice: Die[] = [-0.52, 0.52].map((x, i) => {
+    const mats = faceTextures.map((map) => keep(new THREE.MeshStandardMaterial({ map, roughness: 0.35 })));
+    const mesh = new THREE.Mesh(dieGeo, mats);
+    mesh.castShadow = true;
+    const restAt = new THREE.Vector3(x, TOP + DIE / 2, 0.04 * (i ? 1 : -1));
+    mesh.position.copy(restAt);
+    mesh.quaternion.copy(FACE_UP[i ? 5 : 6]);
+    scene.add(mesh);
+    return { mesh, mats, rest: restAt, roll: null, dim: 0 };
+  });
+  /** The glow under the die you're about to play, or under both when it's time to roll. */
+  const dieGlows = dice.map((d) => {
+    const ring = makeRing(COLORS.gold, scene);
+    ring.position.set(d.rest.x, TOP + 0.01, d.rest.z);
+    ring.scale.setScalar(1.15);
+    return ring;
+  });
 
   // ---- Camera ----
   let viewerColor = 0;
@@ -448,24 +466,32 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
 
   // ---- State ----
   let clock = 0;
-  let legal: number[] = [];
+  let movable: TokenRef[] = [];
   let canRoll = false;
-  let turnSeat = -1;
-  let you = 0;
-  let hovered: number | null = null;
-  let focused: number | null = null;
-  let rollValue: number | null = null;
+  let selectedDie: number | null = null;
+  let steps: number | null = null;
+  let hovered: TokenRef | null = null;
+  let focused: TokenRef | null = null;
+  let faces: [number, number] | null = null;
+  /** The dice values still to play, from the moment the dice stop rolling. */
+  let left = { values: [] as number[], from: 0 };
+
+  const same = (a: TokenRef | null, t: Token) => !!a && a.color === t.color && a.token === t.index;
+  const tokenOf = (color: number, index: number) => tokens.find((t) => t.color === color && t.index === index)!;
+  /** Where a token is, or will be once its queued hops are done. */
+  const endOf = (t: Token) => (t.hops.length ? t.hops[t.hops.length - 1].points.at(-1)!.clone() : t.group.position.clone());
 
   function sync(v: LudoView) {
-    you = Math.max(0, v.you);
-    if (colors.join() !== v.colors.join()) buildTokens(v.colors);
-    viewerColor = v.colors[you] ?? 0;
-    // Your colour's yard comes round to the bottom left.
+    const you = Math.max(0, v.you);
+    const houses = v.houses.flat();
+    if (inPlay.join() !== houses.join()) buildTokens(houses);
+    viewerColor = v.houses[you]?.[0] ?? 0;
+    // Your house comes round to the bottom left (and one against one, your other house to the bottom right).
     board.rotation.y = ((1 + viewerColor) * Math.PI) / 2;
-    tokens.forEach((t) => {
-      t.progress = v.tokens[t.seat][t.index];
-      t.hop = null;
-    });
+    for (const t of tokens) {
+      t.progress = v.tokens[t.color][t.index];
+      t.hops = [];
+    }
     rest = layout();
     for (const t of tokens) {
       const r = rest.get(t)!;
@@ -473,65 +499,71 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
       t.group.scale.setScalar(r.scale);
       t.group.rotation.set(0, 0, 0);
     }
-    turnSeat = v.winner === null ? v.turn : -1;
-    if (v.roll) {
-      rollValue = v.roll;
-      die.quaternion.copy(FACE_UP[v.roll]);
-    }
+    faces = v.dice;
+    if (faces) dice.forEach((d, i) => d.mesh.quaternion.copy(FACE_UP[faces![i]]));
+    left = { values: v.left, from: clock };
   }
-
-  const tokenOf = (seat: number, index: number) => tokens.find((t) => t.seat === seat && t.index === index)!;
 
   function apply(events: LudoEvent[], v: LudoView) {
     let t = 0;
+    let rolled = 0;
     for (const e of events) {
       if (e.type === "roll") {
-        rollValue = e.value;
-        const throwFrom = toLocal(rotateCell(YARD_CENTRE, colors[e.seat]), TOP + 2.2).multiplyScalar(0.7);
-        throwFrom.y = TOP + 2.2;
-        const yaw = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, Math.random() * Math.PI * 2);
-        dieRoll = {
-          from: throwFrom,
-          spinAxis: new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.4, Math.random() - 0.5).normalize(),
-          spins: reducedMotion ? 0 : 3 + Math.random() * 2,
-          end: yaw.multiply(FACE_UP[e.value]),
-          start: clock + t,
-          dur: reducedMotion ? 200 : PACE.roll - 80,
-        };
+        faces = e.dice;
+        // Thrown in from the roller's side of the board.
+        const house = v.houses[e.seat][0];
+        const from = board.localToWorld(toLocal(rotateCell(YARD_CENTRE, house), 0).multiplyScalar(0.7));
+        dice.forEach((d, i) => {
+          const yaw = new THREE.Quaternion().setFromAxisAngle(THREE.Object3D.DEFAULT_UP, (Math.random() - 0.5) * 1.2);
+          d.roll = {
+            from: from.clone().add(new THREE.Vector3(i ? 0.6 : -0.6, TOP + 2.2, 0)),
+            axis: new THREE.Vector3(Math.random() - 0.5, Math.random() * 0.4, Math.random() - 0.5).normalize(),
+            spins: reducedMotion ? 0 : 3 + Math.random() * 2,
+            end: yaw.multiply(FACE_UP[e.dice[i]]),
+            start: clock + t + i * 70,
+            dur: reducedMotion ? 200 : PACE.roll - 150,
+          };
+        });
         t += PACE.roll;
+        rolled = t;
       } else if (e.type === "move") {
-        const tok = tokenOf(e.seat, e.token);
-        const cells = pathFor(colors[e.seat], e.from, e.to, e.token);
-        const points = [tok.group.position.clone(), ...cells.map((c) => toLocal(c))];
+        const tok = tokenOf(e.color, e.token);
         const leaving = e.from === YARD;
-        tok.hop = {
-          points,
+        tok.hops.push({
+          points: [endOf(tok), ...pathFor(e.color, e.from, e.to, e.token).map((c) => toLocal(c))],
           start: clock + t,
-          hop: leaving ? PACE.leaveYard - 40 : PACE.step,
+          hop: leaving ? PACE.leaveHouse - 40 : PACE.step,
           arc: leaving ? 1.1 : 0.42,
           spin: false,
-        };
+        });
         tok.progress = e.to;
-        t += leaving ? PACE.leaveYard : (e.to - e.from) * PACE.step + 120;
+        t += leaving ? PACE.leaveHouse : (e.to - e.from) * PACE.step + 120;
       } else if (e.type === "capture") {
-        const tok = tokenOf(e.victim, e.token);
+        const tok = tokenOf(e.color, e.token);
         tok.progress = YARD;
-        tok.hop = {
-          points: [toLocal(cellFor(colors[e.victim], e.from, e.token)), toLocal(cellFor(colors[e.victim], YARD, e.token))],
+        tok.hops.push({
+          points: [endOf(tok), toLocal(cellFor(e.color, YARD, e.token))],
           start: clock + t - 60,
           hop: PACE.capture - 60,
           arc: 3.2,
           spin: !reducedMotion,
-        };
+        });
         t += PACE.capture;
-      } else if (e.type === "home") t += PACE.home;
-      else if (e.type === "stuck") t += PACE.stuck;
-      else if (e.type === "forfeit") t += PACE.forfeit;
+      } else if (e.type === "home") {
+        const tok = tokenOf(e.color, e.token);
+        if (e.by === "capture") {
+          // The capturing token goes home too: a leap from the square it took to the middle.
+          tok.hops.push({ points: [endOf(tok), toLocal(cellFor(e.color, HOME, e.token))], start: clock + t, hop: PACE.home, arc: 2.4, spin: false });
+          t += 200;
+        }
+        tok.progress = HOME;
+        t += PACE.home;
+      } else if (e.type === "lost") t += PACE.lost;
     }
     rest = layout();
-    turnSeat = v.winner === null ? v.turn : -1;
+    left = { values: v.left, from: clock + rolled };
     // If anything disagrees with the view (a missed update, say), the view wins.
-    if (tokens.some((tok) => tok.progress !== v.tokens[tok.seat]?.[tok.index])) sync(v);
+    if (tokens.some((tok) => tok.progress !== v.tokens[tok.color]?.[tok.index])) sync(v);
   }
 
   // ---- Picking ----
@@ -540,17 +572,33 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
   const hitTest = (u: number, v: number): LudoHit => {
     ndc.set(u * 2 - 1, -(v * 2 - 1));
     raycaster.setFromCamera(ndc, camera);
-    if (legal.length) {
-      const mine = tokens.filter((t) => t.seat === turnSeat && legal.includes(t.index));
+    if (movable.length) {
+      const mine = tokens.filter((t) => movable.some((m) => same(m, t)));
       const hit = raycaster.intersectObjects(mine.map((t) => t.hit), false)[0];
-      if (hit) return { kind: "token", token: mine.find((t) => t.hit === hit.object)!.index };
+      if (hit) {
+        const t = mine.find((m) => m.hit === hit.object)!;
+        return { kind: "token", color: t.color, token: t.index };
+      }
     }
-    if (raycaster.intersectObject(die, false).length) return { kind: "die" };
-    return null;
+    const die = dice.findIndex((d) => raycaster.intersectObject(d.mesh, false).length);
+    return die >= 0 ? { kind: "die", die } : null;
+  };
+
+  /** Which dice are spent, matching what's left to the faces showing. */
+  const spent = () => {
+    if (!faces || clock < left.from) return [false, false];
+    const remaining = [...left.values];
+    return faces.map((f) => {
+      const at = remaining.indexOf(f);
+      if (at < 0) return true;
+      remaining.splice(at, 1);
+      return false;
+    });
   };
 
   // ---- Frame ----
   const pos = new THREE.Vector3();
+  const spin = new THREE.Quaternion();
   function render(dtSeconds: number) {
     clock += dtSeconds * 1000;
     const dt = Math.min(dtSeconds, 0.1);
@@ -558,76 +606,79 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
 
     for (const tok of tokens) {
       const r = rest.get(tok)!;
-      const isLegal = turnSeat === tok.seat && legal.includes(tok.index);
-      const goal = isLegal ? 1 : 0;
-      tok.bob += (goal - tok.bob) * (1 - Math.exp(-dt * 10));
+      const isMovable = movable.some((m) => same(m, tok));
+      const isChosen = isMovable && (same(focused, tok) || same(hovered, tok));
+      tok.bob += ((isMovable ? 1 : 0) - tok.bob) * (1 - Math.exp(-dt * 10));
       const mat = tok.pawn.material as THREE.MeshPhysicalMaterial;
-      mat.emissiveIntensity = tok.bob * (0.12 + pulse * 0.18) + (tok.index === focused && isLegal ? 0.2 : 0);
+      mat.emissiveIntensity = tok.bob * (0.12 + pulse * 0.18) + (isChosen ? 0.2 : 0);
 
-      const hop = tok.hop;
+      const hop = tok.hops[0];
       if (hop && clock >= hop.start) {
-        const steps = hop.points.length - 1;
+        const legs = hop.points.length - 1;
         const elapsed = clock - hop.start;
-        const seg = Math.min(steps - 1, Math.floor(elapsed / hop.hop));
+        const seg = Math.min(legs - 1, Math.floor(elapsed / hop.hop));
         const k = Math.min(1, (elapsed - seg * hop.hop) / hop.hop);
-        const a = hop.points[seg];
-        const b = seg === steps - 1 ? r.pos : hop.points[seg + 1];
-        pos.lerpVectors(a, b, ease(k));
+        pos.lerpVectors(hop.points[seg], hop.points[seg + 1], ease(k));
         pos.y += Math.sin(k * Math.PI) * hop.arc;
         tok.group.position.copy(pos);
         tok.group.rotation.y = hop.spin ? k * Math.PI * 4 : 0;
-        tok.group.scale.setScalar(THREE.MathUtils.lerp(tok.group.scale.x, r.scale, 0.2));
-        if (elapsed >= steps * hop.hop) {
-          tok.hop = null;
+        if (elapsed >= legs * hop.hop) {
+          tok.hops.shift();
           tok.group.rotation.y = 0;
         }
       } else if (!hop) {
-        const lift = isLegal && !reducedMotion ? 0.08 + Math.sin(clock / 220 + tok.index) * 0.06 : 0;
-        const hoverLift = (tok.index === hovered || tok.index === focused) && isLegal ? 0.18 : 0;
-        tok.group.position.x += (r.pos.x - tok.group.position.x) * (1 - Math.exp(-dt * 14));
-        tok.group.position.z += (r.pos.z - tok.group.position.z) * (1 - Math.exp(-dt * 14));
-        tok.group.position.y += (r.pos.y + lift + hoverLift - tok.group.position.y) * (1 - Math.exp(-dt * 14));
-        tok.group.scale.setScalar(tok.group.scale.x + (r.scale - tok.group.scale.x) * (1 - Math.exp(-dt * 10)));
+        // Settle into its spot, and bob when it can move.
+        const lift = isMovable && !reducedMotion ? 0.08 + Math.sin(clock / 220 + tok.index) * 0.06 : 0;
+        const k = 1 - Math.exp(-dt * 14);
+        tok.group.position.x += (r.pos.x - tok.group.position.x) * k;
+        tok.group.position.z += (r.pos.z - tok.group.position.z) * k;
+        tok.group.position.y += (r.pos.y + lift + (isChosen ? 0.18 : 0) - tok.group.position.y) * k;
       }
+      tok.group.scale.setScalar(tok.group.scale.x + (r.scale - tok.group.scale.x) * (1 - Math.exp(-dt * 10)));
       const ringMat = tok.ring.material as THREE.MeshBasicMaterial;
       tok.ring.visible = tok.bob > 0.02;
       tok.ring.position.set(r.pos.x, TOP + 0.012, r.pos.z);
       ringMat.opacity = tok.bob * (0.45 + pulse * 0.45);
     }
 
-    // Where the chosen token would land.
+    // Where the chosen token would land with the chosen die.
     const pick = focused ?? hovered;
-    const chosen = pick !== null && legal.includes(pick) ? tokenOf(turnSeat, pick) : null;
+    const chosen = pick && movable.some((m) => m.color === pick.color && m.token === pick.token) ? tokenOf(pick.color, pick.token) : null;
+    const to = chosen && steps ? target(chosen.progress, steps) : null;
     const dm = destination.material as THREE.MeshBasicMaterial;
-    if (chosen && rollValue) {
-      const to = target(chosen.progress, rollValue);
-      if (to !== null) {
-        destination.position.copy(toLocal(cellFor(colors[chosen.seat], to, chosen.index), TOP + 0.014));
-        destination.visible = true;
-        dm.opacity = 0.5 + pulse * 0.4;
-      }
+    if (chosen && to !== null) {
+      destination.position.copy(toLocal(cellFor(chosen.color, to, chosen.index), TOP + 0.014));
+      destination.visible = true;
+      dm.opacity = 0.5 + pulse * 0.4;
     } else destination.visible = false;
 
-    // The die: tumbling in from the thrower's side, or waiting to be rolled.
-    if (dieRoll && clock >= dieRoll.start) {
-      const k = Math.min(1, (clock - dieRoll.start) / dieRoll.dur);
-      const glide = 1 - Math.pow(1 - k, 3);
-      die.position.lerpVectors(dieRoll.from, dieRest, glide);
-      const bounce = Math.abs(Math.cos(k * Math.PI * 2.5)) * (1 - k) * (1 - k) * 1.6;
-      die.position.y = dieRest.y + bounce * (1 - glide * 0.3);
-      const spin = new THREE.Quaternion().setFromAxisAngle(dieRoll.spinAxis, (1 - glide) * dieRoll.spins * Math.PI * 2);
-      die.quaternion.copy(spin.multiply(dieRoll.end));
-      if (k >= 1) {
-        dieRoll = null;
-        die.position.copy(dieRest);
+    // Dice: tumbling in, waiting to be rolled, or showing what's left to play.
+    const used = spent();
+    dice.forEach((d, i) => {
+      const roll = d.roll;
+      if (roll && clock >= roll.start) {
+        const k = Math.min(1, (clock - roll.start) / roll.dur);
+        const glide = 1 - Math.pow(1 - k, 3);
+        d.mesh.position.lerpVectors(roll.from, d.rest, glide);
+        d.mesh.position.y = d.rest.y + Math.abs(Math.cos(k * Math.PI * 2.5)) * (1 - k) * (1 - k) * 1.6 * (1 - glide * 0.3);
+        spin.setFromAxisAngle(roll.axis, (1 - glide) * roll.spins * Math.PI * 2);
+        d.mesh.quaternion.copy(spin).multiply(roll.end);
+        if (k >= 1) {
+          d.roll = null;
+          d.mesh.position.copy(d.rest);
+        }
+      } else if (!roll) {
+        const wait = canRoll && !reducedMotion ? Math.sin(clock / 300 + i) * 0.06 + 0.08 : 0;
+        const sink = used[i] ? -0.12 : 0;
+        d.mesh.position.y += (d.rest.y + wait + sink - d.mesh.position.y) * (1 - Math.exp(-dt * 8));
       }
-    } else if (!dieRoll) {
-      const wait = canRoll && !reducedMotion ? Math.sin(clock / 300) * 0.06 + 0.08 : 0;
-      die.position.y += (dieRest.y + wait - die.position.y) * (1 - Math.exp(-dt * 8));
-    }
-    const gm = dieGlow.material as THREE.MeshBasicMaterial;
-    dieGlow.visible = canRoll;
-    gm.opacity = 0.35 + pulse * 0.45;
+      // A spent die goes dark.
+      d.dim += ((used[i] && !roll ? 1 : 0) - d.dim) * (1 - Math.exp(-dt * 8));
+      for (const m of d.mats) m.color.setScalar(1 - d.dim * 0.55);
+      const glow = dieGlows[i];
+      glow.visible = canRoll || (selectedDie === i && !used[i]);
+      (glow.material as THREE.MeshBasicMaterial).opacity = canRoll ? 0.35 + pulse * 0.45 : 0.7;
+    });
 
     renderer.render(scene, camera);
   }
@@ -636,24 +687,26 @@ export function createLudoScene(canvas: HTMLCanvasElement, options: { reducedMot
     resize,
     apply,
     reset: sync,
-    /** What the player at this screen can do right now. */
-    setInput(next: { legal: number[]; roll: boolean }) {
-      legal = next.legal;
+    /** What the player at this screen can do right now, and with which die. */
+    setInput(next: { movable: TokenRef[]; roll: boolean; die: number | null; steps: number | null }) {
+      movable = next.movable;
       canRoll = next.roll;
+      selectedDie = next.die;
+      steps = next.steps;
     },
-    setHover(token: number | null) {
+    setHover(token: TokenRef | null) {
       hovered = token;
     },
-    setFocus(token: number | null) {
+    setFocus(token: TokenRef | null) {
       focused = token;
     },
     hitTest,
-    /** Which corner of the screen a seat's yard has come round to. */
-    cornerOf(seat: number): "bl" | "tl" | "tr" | "br" {
-      return (["bl", "tl", "tr", "br"] as const)[(colors[seat] - viewerColor + 4) % 4];
+    /** Which corner of the screen a house has come round to. */
+    cornerOf(color: number): "bl" | "tl" | "tr" | "br" {
+      return (["bl", "tl", "tr", "br"] as const)[(color - viewerColor + 4) % 4];
     },
     get busy() {
-      return !!dieRoll || tokens.some((t) => t.hop);
+      return dice.some((d) => d.roll) || tokens.some((t) => t.hops.length);
     },
     render,
     dispose() {

@@ -89,10 +89,12 @@ export type WhotRound = TableBase & {
 
 export type LudoMatch = TableBase & {
   game: "ludo";
-  /** Your colour's name. */
+  /** Your house, or houses one on one ("Blue & Yellow"). */
   color: string;
   /** Your tokens home at the end. */
   home: number;
+  /** Tokens you played: 4, or 8 with two houses. */
+  pieces: number;
   captures: number;
   /** Your tokens sent back to the yard. */
   lost: number;
