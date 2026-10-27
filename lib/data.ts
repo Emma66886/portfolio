@@ -90,7 +90,7 @@ export const skillGroups = [
   },
   {
     title: "Backend & Serverless",
-    items: ["Node.js", "NestJS", "Express", "ASP.NET Core", "REST", "GraphQL", "Event-driven"],
+    items: ["Node.js", "NestJS", "Fastify", "Express", "ASP.NET Core", "REST", "GraphQL", "Event-driven"],
   },
   {
     title: "Data",
@@ -142,6 +142,18 @@ export const experience = [
       "Own technical direction and architecture, leading engineering delivery end to end across backend, product and integration surfaces.",
       "Define system architecture, module boundaries and the delivery roadmap, and set the code review, Jest coverage and release standards the team works to.",
       "Build and direct a small engineering team while staying hands-on in the day-to-day work.",
+    ],
+  },
+  {
+    date: "2026 - Present · Remote",
+    title: "Full-Stack Engineer & Product Builder",
+    org: "MySocioRep",
+    url: "https://mysociorep.com",
+    points: [
+      "My own product: a social media growth platform that helps founders, creators and businesses keep a consistent presence on LinkedIn and X.",
+      "Built the Next.js web app, the interface people use to create, publish and engage with their content.",
+      "Built the server and API layer on Node.js and Fastify as a lightweight base for the app's requests, and wired the frontend to it.",
+      "Own the product as well as the code: turning the time and planning that consistent posting takes into workflows, and making the architecture calls on both ends.",
     ],
   },
   {
@@ -251,6 +263,14 @@ export const projects: Project[] = [
     tech: "Next.js / TypeScript / DNS & SMTP / Webhooks",
     caption: "Authentication and reputation checks",
     image: "/projects/hookroast.webp",
+  },
+  {
+    variant: "pv-2",
+    title: "MySocioRep",
+    url: "https://mysociorep.com",
+    body: "Social media growth platform for founders, creators and businesses who want a steady presence on LinkedIn and X, with creating, publishing and engaging handled in one place.",
+    tech: "Next.js / Node.js / Fastify",
+    caption: "Consistent posting on LinkedIn and X",
   },
   {
     variant: "pv-3",

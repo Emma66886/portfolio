@@ -1,4 +1,4 @@
-"""Builds Emmanuel's frontend CV as a text-based (ATS readable) PDF."""
+"""Builds Emmanuel's full-stack CV as a text-based (ATS readable) PDF."""
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
@@ -82,7 +82,7 @@ for label, items in [
     ("Languages", "TypeScript, JavaScript, Python, Node.js, Java, C#, Rust, SQL, Solidity"),
     ("Frontend", "React, Next.js, Redux, Context API, Tailwind CSS, responsive and cross browser "
                  "UI, real-time and collaborative interfaces"),
-    ("Backend and serverless", "Node.js, NestJS, Express, ASP.NET Core, REST and GraphQL APIs, "
+    ("Backend and serverless", "Node.js, NestJS, Fastify, Express, ASP.NET Core, REST and GraphQL APIs, "
                                "serverless functions, event-driven architecture, background jobs, "
                                "microservices"),
     ("Databases and modelling", "PostgreSQL (advanced queries, indexing, partitioning, row level "
@@ -108,6 +108,17 @@ job("Chief Technology Officer and Full-Stack Engineer", "Usefleet", "Mar 2026 to
     "Define system architecture, module boundaries and the delivery roadmap, and set the code "
     "review, Jest coverage and release standards the team works to.",
     "Build and direct a small engineering team while staying hands-on in the day to day work.",
+])
+
+job("Full-Stack Engineer and Product Builder", "MySocioRep", "2026 to Present, Remote", [
+    "My own product: a social media growth platform that helps founders, creators and "
+    "businesses keep a consistent presence on LinkedIn and X.",
+    "Built the Next.js web app, the interface people use to create, publish and engage with "
+    "their content.",
+    "Built the server and API layer on Node.js and Fastify as a lightweight base for the app's "
+    "requests, and wired the frontend to it.",
+    "Own the product as well as the code: turning the time and planning that consistent posting "
+    "takes into workflows, and making the architecture calls on both ends.",
 ])
 
 job("Principal Engineer", "Kinem Labs (BuildArena)", "Jun 2025 to Jun 2026, Remote", [
@@ -205,6 +216,9 @@ for title, url, desc in [
     ("Hookroast", "hookroast.com",
      "Pre-send deliverability platform for cold email: spam scoring on drafts, recipient "
      "verification, domain reputation and SPF, DKIM and DMARC checks."),
+    ("MySocioRep", "mysociorep.com",
+     "Social media growth platform for founders, creators and businesses building a steady "
+     "presence on LinkedIn and X. Next.js frontend on a Node.js and Fastify API."),
 ]:
     story.append(Paragraph(f"<b>{title}</b> ({url}). {desc}", body))
 
@@ -260,7 +274,7 @@ doc = SimpleDocTemplate(
     "/home/coder/portfolio_website/public/Emmanuel-Akinroye-CV.pdf",
     pagesize=A4,
     leftMargin=16 * mm, rightMargin=16 * mm, topMargin=14 * mm, bottomMargin=13 * mm,
-    title="Emmanuel Akinroye, Senior Frontend Engineer, CV",
+    title="Emmanuel Akinroye, Senior Full-Stack Engineer, CV",
     author="Emmanuel Akinroye",
     subject="Curriculum Vitae",
 )
